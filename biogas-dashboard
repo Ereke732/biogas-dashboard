@@ -1,0 +1,19 @@
+# Biogas IoT Monitoring and Control System
+
+Web dashboard + ESP32 + Firebase для мониторинга и управления биогазовой установкой.
+
+## Files
+- `index.html` — web dashboard
+- `wokwi/sketch.ino` — код ESP32
+- `wokwi/diagram.json` — схема Wokwi
+- `wokwi/libraries.txt` — библиотеки Wokwi
+
+## Firebase
+- Realtime Database
+- Device ID: `esp32-biogas-01`
+
+## Features
+- мониторинг температуры, CH4, CO2, O2, H2S, pH
+- графики
+- удалённое управление
+- журнал событий
