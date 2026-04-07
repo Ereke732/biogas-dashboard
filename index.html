@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Biogas Public Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #0b1020; color: #edf3ff; }
+    header { padding: 20px; background: #111a2d; border-bottom: 1px solid #243250; }
+    h1 { margin: 0 0 8px; }
+    h2 { margin: 0 0 14px; }
+    main { padding: 18px; display: grid; gap: 18px; }
+    .card { background: #151b2f; border: 1px solid #243250; border-radius: 16px; padding: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+    .metric { background: #10182b; border: 1px solid #243250; border-radius: 12px; padding: 12px; }
+    .metric span { display:block; color:#9cb0d3; font-size:13px; margin-bottom:6px; }
+    .metric strong { font-size: 24px; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; }
+    button { padding: 10px 14px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; font-size: 15px; }
+    .btn-on { background:#41d17d; color:#04140a; }
+    .btn-off { background:#ff6666; color:#2b0505; }
+    .charts { display:grid; grid-template-columns: 1fr; gap: 18px; }
+    .chart-box {
+      position: relative;
+      background:#0f1730;
+      border:1px solid #243250;
+      border-radius:14px;
+      padding:14px;
+      min-height: 320px;
+    }
+    .small { color:#9cb0d3; }
+    .statusbar { color:#9cb0d3; font-size: 13px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Biogas Public Dashboard</h1>
+    <div class="small">Открывайте эту ссылку с любого устройства для просмотра параметров, графиков и управления.</div>
+    <div class="statusbar" id="statusText">Статус: ожидание подключения к Firebase...</div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Текущие параметры</h2>
+      <div class="grid">
+        <div class="metric"><span>Температура</span><strong id="m_temp">--</strong></div>
+        <div class="metric"><span>CH4</span><strong id="m_ch4">--</strong></div>
+        <div class="metric"><span>CO2</span><strong id="m_co2">--</strong></div>
+        <div class="metric"><span>O2</span><strong id="m_o2">--</strong></div>
+        <div class="metric"><span>H2S</span><strong id="m_h2s">--</strong></div>
+        <div class="metric"><span>pH</span><strong id="m_ph">--</strong></div>
+        <div class="metric"><span>Нагрев</span><strong id="m_heater">--</strong></div>
+        <div class="metric"><span>Вентилятор</span><strong id="m_vent">--</strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Управление</h2>
+      <div class="controls">
+        <button class="btn-on" onclick="setControl('heater', 1)">Включить нагрев</button>
+        <button class="btn-off" onclick="setControl('heater', 0)">Выключить нагрев</button>
+        <button class="btn-on" onclick="setControl('vent', 1)">Включить вентилятор</button>
+        <button class="btn-off" onclick="setControl('vent', 0)">Выключить вентилятор</button>
+      </div>
+    </section>
+
+    <section class="card charts">
+      <h2>Графики</h2>
+      <div class="chart-box"><canvas id="chart1"></canvas></div>
+      <div class="chart-box"><canvas id="chart2"></canvas></div>
+    </section>
+  </main>
+
+  <script>
+    const FIREBASE_DB_URL = "https://erekearduino-default-rtdb.firebaseio.com";
+    const DEVICE_ID = "esp32-biogas-01";
+    const FIREBASE_AUTH = "";
+
+    let chart1 = null;
+    let chart2 = null;
+
+    function setStatus(text) {
+      const el = document.getElementById('statusText');
+      if (el) el.textContent = text;
+    }
+
+    function dbUrl(path) {
+      let url = `${FIREBASE_DB_URL}${path}.json`;
+      if (FIREBASE_AUTH && FIREBASE_AUTH.trim() !== "") {
+        url += `?auth=${encodeURIComponent(FIREBASE_AUTH)}`;
+      }
+      return url;
+    }
+
+    async function getJson(path) {
+      const res = await fetch(dbUrl(path));
+      if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+      return await res.json();
+    }
+
+    async function putJson(path, data) {
+      const res = await fetch(dbUrl(path), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
+      return await res.json();
+    }
+
+    function fmt(v, suffix = '') {
+      if (v === null || v === undefined || v === '') return '--';
+      const num = Number(v);
+      if (Number.isNaN(num)) return String(v);
+      return num.toFixed(2) + suffix;
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function pick(obj, keys, fallback = null) {
+      for (const k of keys) {
+        if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+      }
+      return fallback;
+    }
+
+    function normalizeCurrent(d) {
+      if (!d || typeof d !== 'object') return null;
+      return {
+        temperature: pick(d, ['temperature', 'Температура (°C)', 'temp']),
+        ch4:         pick(d, ['CH4', 'CH4 (%)', 'ch4']),
+        co2:         pick(d, ['CO2', 'CO2 (%)', 'co2']),
+        o2:          pick(d, ['O2', 'O2 (%)', 'o2']),
+        h2s:         pick(d, ['H2S', 'H2S (%)', 'h2s']),
+        ph:          pick(d, ['pH', 'ph']),
+        heater:      pick(d, ['heater', 'Нагрев', 'heat'], false),
+        vent:        pick(d, ['ventilation', 'vent', 'Вентилятор'], false)
+      };
+    }
+
+    function normalizeHistoryRow(row) {
+      return {
+        ts:   String(pick(row, ['timestamp', 'ts', 'Дата время', 'time'], '')),
+        temp: Number(pick(row, ['temperature', 'Температура (°C)', 'temp'], NaN)),
+        ch4:  Number(pick(row, ['CH4', 'CH4 (%)', 'ch4'], NaN)),
+        co2:  Number(pick(row, ['CO2', 'CO2 (%)', 'co2'], NaN)),
+        o2:   Number(pick(row, ['O2', 'O2 (%)', 'o2'], NaN)),
+        h2s:  Number(pick(row, ['H2S', 'H2S (%)', 'h2s'], NaN)),
+        ph:   Number(pick(row, ['pH', 'ph'], NaN))
+      };
+    }
+
+    async function fetchLatest() {
+      const raw = await getJson(`/devices/${DEVICE_ID}/current`);
+      const d = normalizeCurrent(raw);
+      if (!d) return;
+
+      setText('m_temp', fmt(d.temperature, ' °C'));
+      setText('m_ch4', fmt(d.ch4, ' %'));
+      setText('m_co2', fmt(d.co2, ' %'));
+      setText('m_o2', fmt(d.o2, ' %'));
+      setText('m_h2s', fmt(d.h2s, ' ppm'));
+      setText('m_ph', fmt(d.ph));
+      setText('m_heater', d.heater ? 'ON' : 'OFF');
+      setText('m_vent', d.vent ? 'ON' : 'OFF');
+    }
+
+    function getHistoryRows(raw) {
+      if (!raw || typeof raw !== 'object') return [];
+
+      return Object.entries(raw)
+        .filter(([key, value]) => {
+          // keep only real pushed history objects like -Op... / -N... / etc
+          return value && typeof value === 'object' && !Array.isArray(value);
+        })
+        .map(([, value]) => normalizeHistoryRow(value))
+        .filter(r =>
+          !Number.isNaN(r.temp) &&
+          !Number.isNaN(r.ch4) &&
+          !Number.isNaN(r.co2) &&
+          !Number.isNaN(r.o2) &&
+          !Number.isNaN(r.h2s) &&
+          !Number.isNaN(r.ph)
+        )
+        .sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0))
+        .slice(-60);
+    }
+
+    function ensureCharts() {
+      if (!chart1) {
+        chart1 = new Chart(document.getElementById('chart1').getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              { label: 'Температура', data: [], borderWidth: 2, fill: false },
+              { label: 'CH4', data: [], borderWidth: 2, fill: false },
+              { label: 'CO2', data: [], borderWidth: 2, fill: false }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: { y: { beginAtZero: false } }
+          }
+        });
+      }
+
+      if (!chart2) {
+        chart2 = new Chart(document.getElementById('chart2').getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              { label: 'H2S', data: [], borderWidth: 2, fill: false },
+              { label: 'O2', data: [], borderWidth: 2, fill: false },
+              { label: 'pH', data: [], borderWidth: 2, fill: false }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: { y: { beginAtZero: false } }
+          }
+        });
+      }
+    }
+
+    async function fetchHistory() {
+      const raw = await getJson(`/devices/${DEVICE_ID}/history`);
+      const rows = getHistoryRows(raw);
+      if (!rows.length) {
+        setStatus('Статус: Firebase подключён, но history пустой или неправильного формата');
+        return;
+      }
+
+      ensureCharts();
+
+      const labels = rows.map(r => r.ts || '');
+      chart1.data.labels = labels;
+      chart1.data.datasets[0].data = rows.map(r => r.temp);
+      chart1.data.datasets[1].data = rows.map(r => r.ch4);
+      chart1.data.datasets[2].data = rows.map(r => r.co2);
+      chart1.update('none');
+
+      chart2.data.labels = labels;
+      chart2.data.datasets[0].data = rows.map(r => r.h2s);
+      chart2.data.datasets[1].data = rows.map(r => r.o2);
+      chart2.data.datasets[2].data = rows.map(r => r.ph);
+      chart2.update('none');
+    }
+
+    async function setControl(key, value) {
+      const current = await getJson(`/devices/${DEVICE_ID}/control/current`).catch(() => ({}));
+      const payload = { ...(current || {}), mode: 'MANUAL' };
+
+      if (key === 'heater') payload.heater = !!value;
+      if (key === 'vent') payload.ventilation = !!value;
+
+      await putJson(`/devices/${DEVICE_ID}/control/current`, payload);
+      await fetchLatest();
+    }
+
+    async function refreshAll() {
+      try {
+        await fetchLatest();
+        await fetchHistory();
+        setStatus('Статус: подключено к Firebase');
+      } catch (e) {
+        console.error(e);
+        setStatus('Статус: нет данных. Проверьте FIREBASE_DB_URL, DEVICE_ID, history и правила доступа');
+      }
+    }
+
+    ensureCharts();
+    refreshAll();
+    setInterval(refreshAll, 700);
+  </script>
+</body>
+</html>
