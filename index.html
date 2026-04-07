@@ -31,6 +31,55 @@
     }
     .small { color:#9cb0d3; }
     .statusbar { color:#9cb0d3; font-size: 13px; margin-top: 10px; }
+	
+	.settings-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:14px;
+}
+.settings-grid label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  color:#d6e3ff;
+  font-size:14px;
+}
+.settings-grid input{
+  background:#0d1730;
+  color:#fff;
+  border:1px solid #2c4370;
+  border-radius:10px;
+  padding:10px 12px;
+}
+.event-log{
+  max-height:320px;
+  overflow:auto;
+  background:#0d1730;
+  border:1px solid #22396a;
+  border-radius:12px;
+  padding:12px;
+}
+.event-item{
+  border-bottom:1px solid #22396a;
+  padding:10px 0;
+}
+.event-item:last-child{
+  border-bottom:none;
+}
+.event-title{
+  font-weight:700;
+  color:#fff;
+}
+.event-meta{
+  font-size:12px;
+  color:#9eb4df;
+  margin-top:4px;
+}
+.event-details{
+  margin-top:6px;
+  color:#d6e3ff;
+}
+	
   </style>
 </head>
 <body>
@@ -41,6 +90,19 @@
   </header>
 
   <main>
+  
+  <section class="card">
+  <h2>Статус системы</h2>
+  <div class="grid grid-6">
+    <div class="metric"><span>Режим</span><strong id="st_mode">--</strong></div>
+    <div class="metric"><span>Wi-Fi</span><strong id="st_wifi">--</strong></div>
+    <div class="metric"><span>Firebase</span><strong id="st_firebase">--</strong></div>
+    <div class="metric"><span>Версия</span><strong id="st_fw">--</strong></div>
+    <div class="metric"><span>Device ID</span><strong id="st_dev">--</strong></div>
+    <div class="metric"><span>Uptime</span><strong id="st_uptime">--</strong></div>
+  </div>
+</section>
+  
     <section class="card">
       <h2>Текущие параметры</h2>
       <div class="grid">
@@ -56,20 +118,63 @@
     </section>
 
     <section class="card">
-      <h2>Управление</h2>
-      <div class="controls">
-        <button class="btn-on" onclick="setControl('heater', 1)">Включить нагрев</button>
-        <button class="btn-off" onclick="setControl('heater', 0)">Выключить нагрев</button>
-        <button class="btn-on" onclick="setControl('vent', 1)">Включить вентилятор</button>
-        <button class="btn-off" onclick="setControl('vent', 0)">Выключить вентилятор</button>
-      </div>
-    </section>
+  <h2>Управление</h2>
+  <div class="controls">
+    <button class="btn-on"  onclick="setMode('AUTO')">Переключить в AUTO</button>
+    <button class="btn-off" onclick="setMode('MANUAL')">Переключить в MANUAL</button>
+
+    <button class="btn-on"  onclick="setControl('heater', true)">Включить нагрев</button>
+    <button class="btn-off" onclick="setControl('heater', false)">Выключить нагрев</button>
+
+    <button class="btn-on"  onclick="setControl('ventilation', true)">Включить вентилятор</button>
+    <button class="btn-off" onclick="setControl('ventilation', false)">Выключить вентилятор</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Настраиваемые пороги</h2>
+  <div class="settings-grid">
+    <label>Мин. температура
+      <input id="cfg_minTemperature" type="number" step="0.1">
+    </label>
+
+    <label>Макс. температура
+      <input id="cfg_maxTemperature" type="number" step="0.1">
+    </label>
+
+    <label>H2S ON
+      <input id="cfg_h2sOnLevel" type="number" step="0.1">
+    </label>
+
+    <label>H2S OFF
+      <input id="cfg_h2sOffLevel" type="number" step="0.1">
+    </label>
+
+    <label>pH min
+      <input id="cfg_phMin" type="number" step="0.1">
+    </label>
+
+    <label>pH max
+      <input id="cfg_phMax" type="number" step="0.1">
+    </label>
+  </div>
+
+  <div class="controls" style="margin-top:14px;">
+    <button class="btn-on" onclick="saveSettings()">Сохранить пороги</button>
+  </div>
+</section>
 
     <section class="card charts">
       <h2>Графики</h2>
       <div class="chart-box"><canvas id="chart1"></canvas></div>
       <div class="chart-box"><canvas id="chart2"></canvas></div>
     </section>
+	
+	<section class="card">
+  <h2>Журнал событий</h2>
+  <div id="eventLog" class="event-log">Загрузка журнала...</div>
+</section>
+	
   </main>
 
   <script>
@@ -258,16 +363,32 @@
       chart2.update('none');
     }
 
-    async function setControl(key, value) {
-      const current = await getJson(`/devices/${DEVICE_ID}/control/current`).catch(() => ({}));
-      const payload = { ...(current || {}), mode: 'MANUAL' };
+async function setControl(key, value) {
+  try {
+    const path = `/devices/${DEVICE_ID}/control/current`;
 
-      if (key === 'heater') payload.heater = !!value;
-      if (key === 'vent') payload.ventilation = !!value;
+    const current = await getJson(path).catch(() => ({}));
 
-      await putJson(`/devices/${DEVICE_ID}/control/current`, payload);
-      await fetchLatest();
-    }
+    const payload = {
+      mode: "MANUAL",
+      heater: current?.heater ?? false,
+      ventilation: current?.ventilation ?? false,
+      pump: current?.pump ?? false
+    };
+
+    if (key === "heater") payload.heater = value;
+    if (key === "ventilation") payload.ventilation = value;
+
+    await putJson(path, payload);
+
+    console.log("Control saved:", payload);
+
+    setTimeout(() => refreshAll(), 500);
+  } catch (err) {
+    console.error("Control write error:", err);
+    alert("Не удалось записать команду в Firebase");
+  }
+}
 
     async function refreshAll() {
       try {
@@ -283,6 +404,151 @@
     ensureCharts();
     refreshAll();
     setInterval(refreshAll, 700);
+	
+	const DEVICE_ID = "esp32-biogas-01";
+
+function dbUrl(path) {
+  return `https://erekearduino-default-rtdb.firebaseio.com${path}.json`;
+}
+
+async function getJson(path) {
+  const res = await fetch(dbUrl(path));
+  if (!res.ok) throw new Error(`GET failed ${res.status}`);
+  return await res.json();
+}
+
+async function putJson(path, data) {
+  const res = await fetch(dbUrl(path), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(`PUT failed ${res.status}`);
+  return await res.json();
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+async function setMode(mode) {
+  const path = `/devices/${DEVICE_ID}/control/current`;
+  const cur = (await getJson(path).catch(() => ({}))) || {};
+
+  const payload = {
+    mode,
+    heater: cur.heater ?? false,
+    ventilation: cur.ventilation ?? false,
+    pump: cur.pump ?? false
+  };
+
+  await putJson(path, payload);
+  setTimeout(refreshAll, 400);
+}
+
+async function setControl(key, value) {
+  const path = `/devices/${DEVICE_ID}/control/current`;
+  const cur = (await getJson(path).catch(() => ({}))) || {};
+
+  const payload = {
+    mode: "MANUAL",
+    heater: cur.heater ?? false,
+    ventilation: cur.ventilation ?? false,
+    pump: cur.pump ?? false
+  };
+
+  if (key === "heater") payload.heater = value;
+  if (key === "ventilation") payload.ventilation = value;
+
+  await putJson(path, payload);
+  setTimeout(refreshAll, 400);
+}
+
+async function saveSettings() {
+  const path = `/devices/${DEVICE_ID}/settings/current`;
+
+  const payload = {
+    minTemperature: parseFloat(document.getElementById("cfg_minTemperature").value),
+    maxTemperature: parseFloat(document.getElementById("cfg_maxTemperature").value),
+    h2sOnLevel: parseFloat(document.getElementById("cfg_h2sOnLevel").value),
+    h2sOffLevel: parseFloat(document.getElementById("cfg_h2sOffLevel").value),
+    phMin: parseFloat(document.getElementById("cfg_phMin").value),
+    phMax: parseFloat(document.getElementById("cfg_phMax").value)
+  };
+
+  await putJson(path, payload);
+  setTimeout(refreshAll, 400);
+}
+
+async function fetchSettings() {
+  const d = await getJson(`/devices/${DEVICE_ID}/settings/current`).catch(() => null);
+  if (!d) return;
+
+  document.getElementById("cfg_minTemperature").value = d.minTemperature ?? 45;
+  document.getElementById("cfg_maxTemperature").value = d.maxTemperature ?? 55;
+  document.getElementById("cfg_h2sOnLevel").value = d.h2sOnLevel ?? 300;
+  document.getElementById("cfg_h2sOffLevel").value = d.h2sOffLevel ?? 250;
+  document.getElementById("cfg_phMin").value = d.phMin ?? 6.8;
+  document.getElementById("cfg_phMax").value = d.phMax ?? 7.9;
+}
+
+async function fetchCurrent() {
+  const d = await getJson(`/devices/${DEVICE_ID}/current`).catch(() => null);
+  if (!d) return;
+
+  setText("m_temp", `${Number(d.temperature ?? 0).toFixed(2)} °C`);
+  setText("m_ch4", `${Number(d.CH4 ?? 0).toFixed(2)} %`);
+  setText("m_co2", `${Number(d.CO2 ?? 0).toFixed(2)} %`);
+  setText("m_o2", `${Number(d.O2 ?? 0).toFixed(2)} %`);
+  setText("m_h2s", `${Number(d.H2S ?? 0).toFixed(2)} ppm`);
+  setText("m_ph", `${Number(d.pH ?? 0).toFixed(2)}`);
+  setText("m_heater", d.heater ? "ON" : "OFF");
+  setText("m_vent", d.ventilation ? "ON" : "OFF");
+
+  setText("st_mode", d.mode ?? "--");
+  setText("st_wifi", d.wifi ? "Connected" : "Disconnected");
+  setText("st_firebase", d.firebase ? "Connected" : "Disconnected");
+  setText("st_fw", d.firmwareVersion ?? "--");
+  setText("st_dev", d.deviceId ?? "--");
+  setText("st_uptime", `${d.uptimeSec ?? 0} sec`);
+}
+
+async function fetchEvents() {
+  const raw = await getJson(`/devices/${DEVICE_ID}/events`).catch(() => null);
+  const box = document.getElementById("eventLog");
+  if (!box) return;
+
+  if (!raw) {
+    box.innerHTML = "Событий пока нет";
+    return;
+  }
+
+  let rows = Object.values(raw).filter(v => v && typeof v === "object");
+  rows.sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+  rows = rows.slice(0, 30);
+
+  box.innerHTML = rows.map(e => `
+    <div class="event-item">
+      <div class="event-title">${e.event || "Event"}</div>
+      <div class="event-meta">
+        level: ${e.level || "--"} | source: ${e.source || "--"} | ts: ${e.timestamp || "--"}
+      </div>
+      <div class="event-details">${e.details || ""}</div>
+    </div>
+  `).join("");
+}
+
+async function refreshAll() {
+  await fetchCurrent();
+  await fetchSettings();
+  await fetchHistory();   // если у вас уже есть графики
+  await fetchEvents();
+}
+
+refreshAll();
+setInterval(refreshAll, 1000);
+	
   </script>
 </body>
 </html>
