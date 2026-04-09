@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Lab-on-Chip Biogas Platform</title>
+  <div class="hero-online">ONLINE LAB-ON-CHIP STREAM</div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body{margin:0;font-family:Arial,sans-serif;background:#09111f;color:#eef4ff}
@@ -33,6 +34,131 @@
     .ok{color:#6be29f}
     .warn{color:#ffd166}
     .danger{color:#ff7a7a}
+
+    .metric-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+}
+
+.metric-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  opacity: 0.95;
+  transition: background 0.2s ease;
+}
+
+.metric-card.status-normal {
+  border-color: rgba(63, 203, 116, 0.45);
+  box-shadow: 0 0 0 1px rgba(63, 203, 116, 0.08), 0 0 18px rgba(63, 203, 116, 0.10);
+}
+.metric-card.status-normal::after {
+  background: linear-gradient(90deg, #1ecb6b, #58f29a);
+}
+
+.metric-card.status-warn {
+  border-color: rgba(255, 186, 59, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 186, 59, 0.08), 0 0 18px rgba(255, 186, 59, 0.10);
+}
+.metric-card.status-warn::after {
+  background: linear-gradient(90deg, #ffb33a, #ffd36b);
+}
+
+.metric-card.status-danger {
+  border-color: rgba(255, 92, 92, 0.50);
+  box-shadow: 0 0 0 1px rgba(255, 92, 92, 0.10), 0 0 18px rgba(255, 92, 92, 0.12);
+}
+.metric-card.status-danger::after {
+  background: linear-gradient(90deg, #ff5c5c, #ff8a8a);
+}
+
+.metric-value {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.metric-state {
+  margin-top: 8px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  color: #c7d6ff;
+}
+
+.metric-state.normal {
+  background: rgba(30, 203, 107, 0.12);
+  color: #77ffb2;
+}
+.metric-state.warn {
+  background: rgba(255, 186, 59, 0.12);
+  color: #ffd36b;
+}
+.metric-state.danger {
+  background: rgba(255, 92, 92, 0.14);
+  color: #ff9b9b;
+}
+
+.hero-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(31, 201, 115, 0.10);
+  color: #8bffc0;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.hero-online::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #32e27c;
+  box-shadow: 0 0 12px #32e27c;
+}
+
+.module-title-gas {
+  color: #7fd1ff;
+}
+.module-title-liquid {
+  color: #82ffbf;
+}
+.module-title-ml {
+  color: #ffd37b;
+}
+
+.event-card {
+  border-left: 4px solid #2f4f8c;
+}
+.event-card.info {
+  border-left-color: #5ca8ff;
+}
+.event-card.warn {
+  border-left-color: #ffbf52;
+}
+.event-card.danger {
+  border-left-color: #ff6a6a;
+}
+
+canvas {
+  filter: drop-shadow(0 0 8px rgba(30, 72, 170, 0.18));
+}
+    
   </style>
 </head>
 <body>
@@ -82,7 +208,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <div class="card metric-card" id="card-ch4">
       <h2>Оптический / ML модуль</h2>
       <div class="grid">
         <div class="metric"><span>NIR Organic Index</span><strong id="m_nir">--</strong></div>
@@ -271,6 +397,21 @@
       setText("st_valve", d.valve ? "OPEN" : "CLOSED");
     }
 
+    applyMetricVisual("ch4", data.ch4);
+applyMetricVisual("co2", data.co2);
+applyMetricVisual("h2sPpm", data.h2sPpm);
+applyMetricVisual("o2", data.o2);
+applyMetricVisual("pressure", data.pressure);
+applyMetricVisual("ph", data.ph);
+applyMetricVisual("ec", data.ec);
+applyMetricVisual("dissolvedOxygen", data.dissolvedOxygen);
+applyMetricVisual("ammonium", data.ammonium);
+applyMetricVisual("nitrate", data.nitrate);
+applyMetricVisual("vfa", data.vfa);
+applyMetricVisual("nirOrganicIndex", data.nirOrganicIndex);
+applyMetricVisual("biomassQualityIndex", data.biomassQualityIndex);
+applyMetricVisual("spectralScore", data.spectralScore);
+
     async function fetchCurrent(){
       const d = await getJson(`/devices/${DEVICE_ID}/current`).catch(() => null);
       renderCurrent(d);
@@ -439,6 +580,114 @@
         console.error(err);
         setStatus("Статус: ошибка загрузки");
       }
+
+      function metricStatus(field, value, data) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "warn";
+  }
+
+  switch (field) {
+    case "ch4":
+      if (value < 50) return "danger";
+      if (value < 56) return "warn";
+      return "normal";
+
+    case "co2":
+      if (value > 42) return "danger";
+      if (value > 36) return "warn";
+      return "normal";
+
+    case "h2sPpm":
+      if (value > 300) return "danger";
+      if (value > 220) return "warn";
+      return "normal";
+
+    case "o2":
+      if (value > 1.2) return "danger";
+      if (value > 0.8) return "warn";
+      return "normal";
+
+    case "pressure":
+      if (value > 1.16) return "danger";
+      if (value > 1.08) return "warn";
+      return "normal";
+
+    case "ph":
+      if (value < 6.8 || value > 7.8) return "danger";
+      if (value < 7.0 || value > 7.6) return "warn";
+      return "normal";
+
+    case "ec":
+      if (value > 4.5) return "danger";
+      if (value > 3.8) return "warn";
+      return "normal";
+
+    case "dissolvedOxygen":
+      if (value < 0.8) return "danger";
+      if (value < 1.2) return "warn";
+      return "normal";
+
+    case "ammonium":
+      if (value > 180) return "danger";
+      if (value > 140) return "warn";
+      return "normal";
+
+    case "nitrate":
+      if (value > 140) return "danger";
+      if (value > 110) return "warn";
+      return "normal";
+
+    case "vfa":
+      if (value > 3.0) return "danger";
+      if (value > 2.2) return "warn";
+      return "normal";
+
+    case "biomassQualityIndex":
+      if (value < 50) return "danger";
+      if (value < 65) return "warn";
+      return "normal";
+
+    case "nirOrganicIndex":
+    case "spectralScore":
+      if (value < 40) return "danger";
+      if (value < 60) return "warn";
+      return "normal";
+
+    default:
+      return "normal";
+  }
+}
+
+function statusText(status) {
+  if (status === "danger") return "DANGER";
+  if (status === "warn") return "WARNING";
+  return "NORMAL";
+}
+
+function applyMetricVisual(field, value) {
+  const card = document.getElementById(`card-${field}`);
+  const state = document.getElementById(`state-${field}`);
+  if (!card || !state) return;
+
+  const status = metricStatus(field, value);
+
+  card.classList.remove("status-normal", "status-warn", "status-danger");
+  state.classList.remove("normal", "warn", "danger");
+
+  if (status === "danger") {
+    card.classList.add("status-danger");
+    state.classList.add("danger");
+  } else if (status === "warn") {
+    card.classList.add("status-warn");
+    state.classList.add("warn");
+  } else {
+    card.classList.add("status-normal");
+    state.classList.add("normal");
+  }
+
+  state.textContent = statusText(status);
+}
+      
     }
 
     ensureCharts();
