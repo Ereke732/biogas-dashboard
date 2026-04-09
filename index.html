@@ -1,287 +1,171 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Biogas Public Dashboard</title>
+  <title>Lab-on-Chip Biogas Platform</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #0b1020;
-      color: #edf3ff;
-    }
-
-    header {
-      padding: 20px;
-      background: #111a2d;
-      border-bottom: 1px solid #243250;
-    }
-
-    h1 { margin: 0 0 8px; }
-    h2 { margin: 0 0 14px; }
-
-    main {
-      padding: 18px;
-      display: grid;
-      gap: 18px;
-    }
-
-    .card {
-      background: #151b2f;
-      border: 1px solid #243250;
-      border-radius: 16px;
-      padding: 16px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 12px;
-    }
-
-    .metric {
-      background: #10182b;
-      border: 1px solid #243250;
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .metric span {
-      display: block;
-      color: #9cb0d3;
-      font-size: 13px;
-      margin-bottom: 6px;
-    }
-
-    .metric strong {
-      font-size: 24px;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    button {
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 15px;
-    }
-
-    .btn-on {
-      background: #41d17d;
-      color: #04140a;
-    }
-
-    .btn-off {
-      background: #ff6666;
-      color: #2b0505;
-    }
-
-    .btn-neutral {
-      background: #7aa2ff;
-      color: #08152f;
-    }
-
-    .charts {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 18px;
-    }
-
-    .chart-box {
-      position: relative;
-      background: #0f1730;
-      border: 1px solid #243250;
-      border-radius: 14px;
-      padding: 14px;
-      min-height: 320px;
-    }
-
-    .small {
-      color: #9cb0d3;
-    }
-
-    .statusbar {
-      color: #9cb0d3;
-      font-size: 13px;
-      margin-top: 10px;
-    }
-
-    .settings-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px;
-    }
-
-    .settings-grid label {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      color: #d6e3ff;
-      font-size: 14px;
-    }
-
-    .settings-grid input {
-      background: #0d1730;
-      color: #fff;
-      border: 1px solid #2c4370;
-      border-radius: 10px;
-      padding: 10px 12px;
-    }
-
-    .event-log {
-      max-height: 320px;
-      overflow: auto;
-      background: #0d1730;
-      border: 1px solid #22396a;
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .event-item {
-      border-bottom: 1px solid #22396a;
-      padding: 10px 0;
-    }
-
-    .event-item:last-child {
-      border-bottom: none;
-    }
-
-    .event-title {
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .event-meta {
-      font-size: 12px;
-      color: #9eb4df;
-      margin-top: 4px;
-    }
-
-    .event-details {
-      margin-top: 6px;
-      color: #d6e3ff;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
+    body{margin:0;font-family:Arial,sans-serif;background:#09111f;color:#eef4ff}
+    header{padding:20px;background:#101a2f;border-bottom:1px solid #203152}
+    h1,h2,h3{margin:0 0 12px}
+    main{padding:18px;display:grid;gap:18px}
+    .card{background:#121c33;border:1px solid #24395e;border-radius:16px;padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+    .metric{background:#0d1730;border:1px solid #22396a;border-radius:12px;padding:12px}
+    .metric span{display:block;font-size:13px;color:#97add6;margin-bottom:6px}
+    .metric strong{font-size:26px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    button{padding:10px 14px;border:none;border-radius:12px;cursor:pointer;font-weight:700}
+    .btn-blue{background:#7aa2ff;color:#08152f}
+    .btn-green{background:#45d483;color:#04160b}
+    .btn-red{background:#ff6a6a;color:#280606}
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+    .settings-grid label{display:flex;flex-direction:column;gap:6px;font-size:14px}
+    .settings-grid input{background:#0d1730;color:#fff;border:1px solid #2c4370;border-radius:10px;padding:10px 12px}
+    .chart-box{background:#0d1730;border:1px solid #22396a;border-radius:12px;padding:12px;min-height:320px}
+    .event-log{max-height:340px;overflow:auto;background:#0d1730;border:1px solid #22396a;border-radius:12px;padding:12px}
+    .event-item{padding:10px 0;border-bottom:1px solid #22396a}
+    .event-item:last-child{border-bottom:none}
+    .event-title{font-weight:700}
+    .event-meta{font-size:12px;color:#9fb5df;margin-top:4px}
+    .small{color:#9cb0d3}
+    .ok{color:#6be29f}
+    .warn{color:#ffd166}
+    .danger{color:#ff7a7a}
   </style>
 </head>
 <body>
   <header>
-    <h1>Biogas Public Dashboard</h1>
-    <div class="small">
-      Open this page from any device to view live parameters, charts, and control functions.
-    </div>
-    <div class="statusbar" id="statusText">Status: waiting for Firebase connection...</div>
+    <h1>Интеллектуальная многосенсорная Lab-on-Chip платформа</h1>
+    <div class="small">Биогаз + биомасса + биосмесь + оптический/ML-модуль + веб-мониторинг</div>
+    <div class="small" id="statusText">Статус: ожидание подключения...</div>
   </header>
 
   <main>
     <section class="card">
-      <h2>System Status</h2>
+      <h2>Состояние системы</h2>
       <div class="grid">
-        <div class="metric"><span>Mode</span><strong id="st_mode">--</strong></div>
+        <div class="metric"><span>Режим</span><strong id="st_mode">--</strong></div>
         <div class="metric"><span>Wi-Fi</span><strong id="st_wifi">--</strong></div>
         <div class="metric"><span>Firebase</span><strong id="st_firebase">--</strong></div>
-        <div class="metric"><span>Firmware</span><strong id="st_fw">--</strong></div>
+        <div class="metric"><span>Прошивка</span><strong id="st_fw">--</strong></div>
         <div class="metric"><span>Device ID</span><strong id="st_dev">--</strong></div>
         <div class="metric"><span>Uptime</span><strong id="st_uptime">--</strong></div>
       </div>
     </section>
 
     <section class="card">
-      <h2>Current Parameters</h2>
+      <h2>Газовый модуль</h2>
       <div class="grid">
-        <div class="metric"><span>Temperature</span><strong id="m_temp">--</strong></div>
         <div class="metric"><span>CH4</span><strong id="m_ch4">--</strong></div>
         <div class="metric"><span>CO2</span><strong id="m_co2">--</strong></div>
-        <div class="metric"><span>O2</span><strong id="m_o2">--</strong></div>
         <div class="metric"><span>H2S</span><strong id="m_h2s">--</strong></div>
+        <div class="metric"><span>O2</span><strong id="m_o2">--</strong></div>
+        <div class="metric"><span>Температура газа</span><strong id="m_gtemp">--</strong></div>
+        <div class="metric"><span>Влажность</span><strong id="m_hum">--</strong></div>
+        <div class="metric"><span>Давление</span><strong id="m_press">--</strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Жидкостный модуль</h2>
+      <div class="grid">
         <div class="metric"><span>pH</span><strong id="m_ph">--</strong></div>
-        <div class="metric"><span>Heater</span><strong id="m_heater">--</strong></div>
-        <div class="metric"><span>Ventilation</span><strong id="m_vent">--</strong></div>
+        <div class="metric"><span>ORP</span><strong id="m_orp">--</strong></div>
+        <div class="metric"><span>EC</span><strong id="m_ec">--</strong></div>
+        <div class="metric"><span>DO</span><strong id="m_do">--</strong></div>
+        <div class="metric"><span>Температура жидкости</span><strong id="m_ltemp">--</strong></div>
+        <div class="metric"><span>NH4</span><strong id="m_nh4">--</strong></div>
+        <div class="metric"><span>NO3</span><strong id="m_no3">--</strong></div>
+        <div class="metric"><span>VFA</span><strong id="m_vfa">--</strong></div>
       </div>
     </section>
 
     <section class="card">
-      <h2>Control</h2>
+      <h2>Оптический / ML модуль</h2>
+      <div class="grid">
+        <div class="metric"><span>NIR Organic Index</span><strong id="m_nir">--</strong></div>
+        <div class="metric"><span>Biomass Quality Index</span><strong id="m_bqi">--</strong></div>
+        <div class="metric"><span>Spectral Score</span><strong id="m_spec">--</strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Управление</h2>
       <div class="controls">
-        <button class="btn-neutral" onclick="setMode('AUTO')">Switch to AUTO</button>
-        <button class="btn-neutral" onclick="setMode('MANUAL')">Switch to MANUAL</button>
+        <button class="btn-blue" onclick="setMode('AUTO')">AUTO</button>
+        <button class="btn-blue" onclick="setMode('MANUAL')">MANUAL</button>
 
-        <button class="btn-on" onclick="setControl('heater', true)">Heater ON</button>
-        <button class="btn-off" onclick="setControl('heater', false)">Heater OFF</button>
+        <button class="btn-green" onclick="setControl('heater', true)">Heater ON</button>
+        <button class="btn-red" onclick="setControl('heater', false)">Heater OFF</button>
 
-        <button class="btn-on" onclick="setControl('ventilation', true)">Ventilation ON</button>
-        <button class="btn-off" onclick="setControl('ventilation', false)">Ventilation OFF</button>
+        <button class="btn-green" onclick="setControl('ventilation', true)">Vent ON</button>
+        <button class="btn-red" onclick="setControl('ventilation', false)">Vent OFF</button>
+
+        <button class="btn-green" onclick="setControl('pump', true)">Pump ON</button>
+        <button class="btn-red" onclick="setControl('pump', false)">Pump OFF</button>
+
+        <button class="btn-green" onclick="setControl('mixer', true)">Mixer ON</button>
+        <button class="btn-red" onclick="setControl('mixer', false)">Mixer OFF</button>
+
+        <button class="btn-green" onclick="setControl('valve', true)">Valve OPEN</button>
+        <button class="btn-red" onclick="setControl('valve', false)">Valve CLOSE</button>
+      </div>
+
+      <div class="grid" style="margin-top:14px">
+        <div class="metric"><span>Heater</span><strong id="st_heater">--</strong></div>
+        <div class="metric"><span>Ventilation</span><strong id="st_vent">--</strong></div>
+        <div class="metric"><span>Pump</span><strong id="st_pump">--</strong></div>
+        <div class="metric"><span>Mixer</span><strong id="st_mixer">--</strong></div>
+        <div class="metric"><span>Valve</span><strong id="st_valve">--</strong></div>
       </div>
     </section>
 
     <section class="card">
-      <h2>Threshold Settings</h2>
+      <h2>Пороговые значения</h2>
       <div class="settings-grid">
-        <label>Min Temperature
-          <input id="cfg_minTemperature" type="number" step="0.1">
-        </label>
-
-        <label>Max Temperature
-          <input id="cfg_maxTemperature" type="number" step="0.1">
-        </label>
-
-        <label>H2S ON Level
-          <input id="cfg_h2sOnLevel" type="number" step="0.1">
-        </label>
-
-        <label>H2S OFF Level
-          <input id="cfg_h2sOffLevel" type="number" step="0.1">
-        </label>
-
-        <label>pH Min
-          <input id="cfg_phMin" type="number" step="0.1">
-        </label>
-
-        <label>pH Max
-          <input id="cfg_phMax" type="number" step="0.1">
-        </label>
+        <label>Gas Temp Min <input id="cfg_gasTempMin" type="number" step="0.1"></label>
+        <label>Gas Temp Max <input id="cfg_gasTempMax" type="number" step="0.1"></label>
+        <label>CH4 Low <input id="cfg_ch4Low" type="number" step="0.1"></label>
+        <label>H2S High <input id="cfg_h2sHigh" type="number" step="0.1"></label>
+        <label>O2 High <input id="cfg_o2High" type="number" step="0.1"></label>
+        <label>pH Min <input id="cfg_phMin" type="number" step="0.1"></label>
+        <label>pH Max <input id="cfg_phMax" type="number" step="0.1"></label>
+        <label>EC Max <input id="cfg_ecMax" type="number" step="0.1"></label>
+        <label>DO Min <input id="cfg_doMin" type="number" step="0.1"></label>
+        <label>NH4 High <input id="cfg_ammoniumHigh" type="number" step="0.1"></label>
+        <label>NO3 High <input id="cfg_nitrateHigh" type="number" step="0.1"></label>
+        <label>VFA High <input id="cfg_vfaHigh" type="number" step="0.1"></label>
       </div>
-
-      <div class="controls" style="margin-top:14px;">
-        <button class="btn-on" onclick="saveSettings()">Save Thresholds</button>
+      <div class="controls" style="margin-top:14px">
+        <button class="btn-green" onclick="saveSettings()">Сохранить настройки</button>
       </div>
-    </section>
-
-    <section class="card charts">
-      <h2>Charts</h2>
-      <div class="chart-box"><canvas id="chart1"></canvas></div>
-      <div class="chart-box"><canvas id="chart2"></canvas></div>
     </section>
 
     <section class="card">
-      <h2>Event Log</h2>
-      <div id="eventLog" class="event-log">Loading events...</div>
+      <h2>Графики</h2>
+      <div class="chart-box"><canvas id="chartGas"></canvas></div>
+      <div class="chart-box" style="margin-top:14px"><canvas id="chartLiquid"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>Журнал событий</h2>
+      <div id="eventLog" class="event-log">Загрузка...</div>
     </section>
   </main>
 
   <script>
     const FIREBASE_DB_URL = "https://erekearduino-default-rtdb.firebaseio.com";
-    const DEVICE_ID = "esp32-biogas-01";
     const FIREBASE_AUTH = "";
+    const DEVICE_ID = "esp32-biogas-01";
 
-    let chart1 = null;
-    let chart2 = null;
+    let chartGas = null;
+    let chartLiquid = null;
 
-    function setStatus(text) {
-      const el = document.getElementById("statusText");
-      if (el) el.textContent = text;
-    }
+    function setStatus(text){ document.getElementById("statusText").textContent = text; }
 
-    function dbUrl(path) {
+    function dbUrl(path){
       let url = `${FIREBASE_DB_URL}${path}.json`;
       if (FIREBASE_AUTH && FIREBASE_AUTH.trim() !== "") {
         url += `?auth=${encodeURIComponent(FIREBASE_AUTH)}`;
@@ -289,346 +173,277 @@
       return url;
     }
 
-    async function getJson(path) {
+    async function getJson(path){
       const res = await fetch(dbUrl(path));
-      if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+      if(!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
       return await res.json();
     }
 
-    async function putJson(path, data) {
+    async function putJson(path, data){
       const res = await fetch(dbUrl(path), {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
+      if(!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
       return await res.json();
     }
 
-    function setText(id, value) {
+    function fmt(v, suffix=""){
+      if(v === null || v === undefined || v === "") return "--";
+      const n = Number(v);
+      if(Number.isNaN(n)) return String(v);
+      return n.toFixed(2) + suffix;
+    }
+
+    function setText(id, value){
       const el = document.getElementById(id);
-      if (el) el.textContent = value;
+      if(el) el.textContent = value;
     }
 
-    function fmt(v, suffix = "") {
-      if (v === null || v === undefined || v === "") return "--";
-      const num = Number(v);
-      if (Number.isNaN(num)) return String(v);
-      return num.toFixed(2) + suffix;
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function pick(obj, keys, fallback = null) {
-      for (const key of keys) {
-        if (obj && obj[key] !== undefined && obj[key] !== null) {
-          return obj[key];
-        }
-      }
-      return fallback;
-    }
-
-    function normalizeCurrent(d) {
-      if (!d || typeof d !== "object") return null;
-
-      return {
-        temperature: pick(d, ["temperature", "Температура (°C)", "temp"]),
-        ch4: pick(d, ["CH4", "CH4 (%)", "ch4"]),
-        co2: pick(d, ["CO2", "CO2 (%)", "co2"]),
-        o2: pick(d, ["O2", "O2 (%)", "o2"]),
-        h2s: pick(d, ["H2S", "H2S (%)", "h2s"]),
-        ph: pick(d, ["pH", "ph"]),
-        heater: pick(d, ["heater", "Нагрев", "heat"], false),
-        vent: pick(d, ["ventilation", "vent", "Вентилятор"], false),
-
-        mode: pick(d, ["mode"]),
-        wifi: pick(d, ["wifi", "wifiConnected"]),
-        firebase: pick(d, ["firebase", "firebaseConnected"]),
-        firmwareVersion: pick(d, ["firmwareVersion", "fwVersion", "version"]),
-        deviceId: pick(d, ["deviceId", "deviceID"], DEVICE_ID),
-        uptimeSec: pick(d, ["uptimeSec", "uptime"])
-      };
-    }
-
-    function normalizeHistoryRow(row) {
-      return {
-        ts: String(pick(row, ["timestamp", "ts", "Дата время", "time"], "")),
-        temp: Number(pick(row, ["temperature", "Температура (°C)", "temp"], NaN)),
-        ch4: Number(pick(row, ["CH4", "CH4 (%)", "ch4"], NaN)),
-        co2: Number(pick(row, ["CO2", "CO2 (%)", "co2"], NaN)),
-        o2: Number(pick(row, ["O2", "O2 (%)", "o2"], NaN)),
-        h2s: Number(pick(row, ["H2S", "H2S (%)", "h2s"], NaN)),
-        ph: Number(pick(row, ["pH", "ph"], NaN))
-      };
-    }
-
-    function getHistoryRows(raw) {
-      if (!raw || typeof raw !== "object") return [];
-
-      return Object.values(raw)
-        .filter(v => v && typeof v === "object" && !Array.isArray(v))
-        .map(normalizeHistoryRow)
-        .filter(r =>
-          !Number.isNaN(r.temp) ||
-          !Number.isNaN(r.ch4) ||
-          !Number.isNaN(r.co2) ||
-          !Number.isNaN(r.o2) ||
-          !Number.isNaN(r.h2s) ||
-          !Number.isNaN(r.ph)
-        )
-        .sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0))
-        .slice(-60);
-    }
-
-    function ensureCharts() {
-      if (!chart1) {
-        chart1 = new Chart(document.getElementById("chart1").getContext("2d"), {
+    function ensureCharts(){
+      if(!chartGas){
+        chartGas = new Chart(document.getElementById("chartGas").getContext("2d"), {
           type: "line",
           data: {
             labels: [],
             datasets: [
-              { label: "Temperature", data: [], borderWidth: 2, fill: false },
               { label: "CH4", data: [], borderWidth: 2, fill: false },
-              { label: "CO2", data: [], borderWidth: 2, fill: false }
+              { label: "CO2", data: [], borderWidth: 2, fill: false },
+              { label: "H2S ppm", data: [], borderWidth: 2, fill: false }
             ]
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            interaction: { mode: "index", intersect: false },
-            scales: { y: { beginAtZero: false } }
-          }
+          options: { responsive: true, maintainAspectRatio: false, animation: false }
         });
       }
 
-      if (!chart2) {
-        chart2 = new Chart(document.getElementById("chart2").getContext("2d"), {
+      if(!chartLiquid){
+        chartLiquid = new Chart(document.getElementById("chartLiquid").getContext("2d"), {
           type: "line",
           data: {
             labels: [],
             datasets: [
-              { label: "H2S", data: [], borderWidth: 2, fill: false },
-              { label: "O2", data: [], borderWidth: 2, fill: false },
-              { label: "pH", data: [], borderWidth: 2, fill: false }
+              { label: "pH", data: [], borderWidth: 2, fill: false },
+              { label: "EC", data: [], borderWidth: 2, fill: false },
+              { label: "DO", data: [], borderWidth: 2, fill: false }
             ]
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            interaction: { mode: "index", intersect: false },
-            scales: { y: { beginAtZero: false } }
-          }
+          options: { responsive: true, maintainAspectRatio: false, animation: false }
         });
       }
     }
 
-    async function fetchCurrent() {
-      const raw = await getJson(`/devices/${DEVICE_ID}/current`).catch(() => null);
-      if (!raw) return false;
-
-      const d = normalizeCurrent(raw);
-      if (!d) return false;
-
-      setText("m_temp", fmt(d.temperature, " °C"));
-      setText("m_ch4", fmt(d.ch4, " %"));
-      setText("m_co2", fmt(d.co2, " %"));
-      setText("m_o2", fmt(d.o2, " %"));
-      setText("m_h2s", fmt(d.h2s, " ppm"));
-      setText("m_ph", fmt(d.ph));
-      setText("m_heater", d.heater ? "ON" : "OFF");
-      setText("m_vent", d.vent ? "ON" : "OFF");
+    function renderCurrent(d){
+      if(!d) return;
 
       setText("st_mode", d.mode ?? "--");
       setText("st_wifi", d.wifi === true ? "Connected" : d.wifi === false ? "Disconnected" : "--");
-      setText("st_firebase", d.firebase === true ? "Connected" : d.firebase === false ? "Disconnected" : "Connected");
+      setText("st_firebase", d.firebase === true ? "Connected" : d.firebase === false ? "Disconnected" : "--");
       setText("st_fw", d.firmwareVersion ?? "--");
-      setText("st_dev", d.deviceId ?? DEVICE_ID);
-      setText("st_uptime", d.uptimeSec !== null && d.uptimeSec !== undefined ? `${d.uptimeSec} sec` : "--");
+      setText("st_dev", d.deviceId ?? "--");
+      setText("st_uptime", d.uptimeSec !== undefined ? `${d.uptimeSec} sec` : "--");
 
-      return true;
+      setText("m_ch4", fmt(d.ch4, " %"));
+      setText("m_co2", fmt(d.co2, " %"));
+      setText("m_h2s", fmt(d.h2sPpm, " ppm"));
+      setText("m_o2", fmt(d.o2, " %"));
+      setText("m_gtemp", fmt(d.gasTemperature, " °C"));
+      setText("m_hum", fmt(d.humidity, " %RH"));
+      setText("m_press", fmt(d.pressure, " bar"));
+
+      setText("m_ph", fmt(d.ph));
+      setText("m_orp", fmt(d.orp, " mV"));
+      setText("m_ec", fmt(d.ec, " mS/cm"));
+      setText("m_do", fmt(d.dissolvedOxygen, " mg/L"));
+      setText("m_ltemp", fmt(d.liquidTemperature, " °C"));
+      setText("m_nh4", fmt(d.ammonium, " mg/L"));
+      setText("m_no3", fmt(d.nitrate, " mg/L"));
+      setText("m_vfa", fmt(d.vfa, " g/L"));
+
+      setText("m_nir", fmt(d.nirOrganicIndex));
+      setText("m_bqi", fmt(d.biomassQualityIndex));
+      setText("m_spec", fmt(d.spectralScore));
+
+      setText("st_heater", d.heater ? "ON" : "OFF");
+      setText("st_vent", d.ventilation ? "ON" : "OFF");
+      setText("st_pump", d.pump ? "ON" : "OFF");
+      setText("st_mixer", d.mixer ? "ON" : "OFF");
+      setText("st_valve", d.valve ? "OPEN" : "CLOSED");
     }
 
-    async function fetchSettings() {
+    async function fetchCurrent(){
+      const d = await getJson(`/devices/${DEVICE_ID}/current`).catch(() => null);
+      renderCurrent(d);
+      return !!d;
+    }
+
+    async function fetchSettings(){
       const d = await getJson(`/devices/${DEVICE_ID}/settings/current`).catch(() => null);
-      if (!d) return false;
+      if(!d) return false;
 
-      document.getElementById("cfg_minTemperature").value = d.minTemperature ?? 45;
-      document.getElementById("cfg_maxTemperature").value = d.maxTemperature ?? 55;
-      document.getElementById("cfg_h2sOnLevel").value = d.h2sOnLevel ?? 300;
-      document.getElementById("cfg_h2sOffLevel").value = d.h2sOffLevel ?? 250;
+      document.getElementById("cfg_gasTempMin").value = d.gasTempMin ?? 35;
+      document.getElementById("cfg_gasTempMax").value = d.gasTempMax ?? 39;
+      document.getElementById("cfg_ch4Low").value = d.ch4Low ?? 50;
+      document.getElementById("cfg_h2sHigh").value = d.h2sHigh ?? 250;
+      document.getElementById("cfg_o2High").value = d.o2High ?? 1.2;
       document.getElementById("cfg_phMin").value = d.phMin ?? 6.8;
-      document.getElementById("cfg_phMax").value = d.phMax ?? 7.9;
+      document.getElementById("cfg_phMax").value = d.phMax ?? 7.8;
+      document.getElementById("cfg_ecMax").value = d.ecMax ?? 4.5;
+      document.getElementById("cfg_doMin").value = d.doMin ?? 0.8;
+      document.getElementById("cfg_ammoniumHigh").value = d.ammoniumHigh ?? 180;
+      document.getElementById("cfg_nitrateHigh").value = d.nitrateHigh ?? 140;
+      document.getElementById("cfg_vfaHigh").value = d.vfaHigh ?? 3.0;
 
       return true;
     }
 
-    async function fetchHistory() {
+    async function saveSettings(){
+      const payload = {
+        gasTempMin: parseFloat(document.getElementById("cfg_gasTempMin").value),
+        gasTempMax: parseFloat(document.getElementById("cfg_gasTempMax").value),
+        ch4Low: parseFloat(document.getElementById("cfg_ch4Low").value),
+        h2sHigh: parseFloat(document.getElementById("cfg_h2sHigh").value),
+        o2High: parseFloat(document.getElementById("cfg_o2High").value),
+        phMin: parseFloat(document.getElementById("cfg_phMin").value),
+        phMax: parseFloat(document.getElementById("cfg_phMax").value),
+        ecMax: parseFloat(document.getElementById("cfg_ecMax").value),
+        doMin: parseFloat(document.getElementById("cfg_doMin").value),
+        ammoniumHigh: parseFloat(document.getElementById("cfg_ammoniumHigh").value),
+        nitrateHigh: parseFloat(document.getElementById("cfg_nitrateHigh").value),
+        vfaHigh: parseFloat(document.getElementById("cfg_vfaHigh").value)
+      };
+
+      await putJson(`/devices/${DEVICE_ID}/settings/current`, payload);
+      setStatus("Статус: настройки сохранены");
+      setTimeout(refreshAll, 500);
+    }
+
+    async function getControlCurrent(){
+      return await getJson(`/devices/${DEVICE_ID}/control/current`).catch(() => ({}));
+    }
+
+    async function setMode(mode){
+      const cur = await getControlCurrent();
+      const payload = {
+        mode,
+        heater: cur.heater ?? false,
+        ventilation: cur.ventilation ?? false,
+        pump: cur.pump ?? false,
+        mixer: cur.mixer ?? false,
+        valve: cur.valve ?? false
+      };
+      await putJson(`/devices/${DEVICE_ID}/control/current`, payload);
+      setStatus(`Статус: режим ${mode}`);
+      setTimeout(refreshAll, 500);
+    }
+
+    async function setControl(key, value){
+      const cur = await getControlCurrent();
+      const payload = {
+        mode: "MANUAL",
+        heater: cur.heater ?? false,
+        ventilation: cur.ventilation ?? false,
+        pump: cur.pump ?? false,
+        mixer: cur.mixer ?? false,
+        valve: cur.valve ?? false
+      };
+      payload[key] = value;
+
+      await putJson(`/devices/${DEVICE_ID}/control/current`, payload);
+      setStatus(`Статус: ${key} = ${value}`);
+      setTimeout(refreshAll, 500);
+    }
+
+    async function fetchHistory(){
       const raw = await getJson(`/devices/${DEVICE_ID}/history`).catch(() => null);
       ensureCharts();
 
-      const rows = getHistoryRows(raw);
-      if (!rows.length) {
-        chart1.data.labels = [];
-        chart1.data.datasets.forEach(ds => ds.data = []);
-        chart1.update("none");
-
-        chart2.data.labels = [];
-        chart2.data.datasets.forEach(ds => ds.data = []);
-        chart2.update("none");
+      if(!raw || typeof raw !== "object"){
+        chartGas.data.labels = [];
+        chartLiquid.data.labels = [];
+        chartGas.update("none");
+        chartLiquid.update("none");
         return false;
       }
 
-      const labels = rows.map(r => r.ts || "");
+      const rows = Object.values(raw)
+        .filter(v => v && typeof v === "object")
+        .sort((a,b) => Number(a.timestamp || 0) - Number(b.timestamp || 0))
+        .slice(-40);
 
-      chart1.data.labels = labels;
-      chart1.data.datasets[0].data = rows.map(r => Number.isNaN(r.temp) ? null : r.temp);
-      chart1.data.datasets[1].data = rows.map(r => Number.isNaN(r.ch4) ? null : r.ch4);
-      chart1.data.datasets[2].data = rows.map(r => Number.isNaN(r.co2) ? null : r.co2);
-      chart1.update("none");
+      const labels = rows.map(r => r.timestamp ? String(r.timestamp).slice(-6) : "");
 
-      chart2.data.labels = labels;
-      chart2.data.datasets[0].data = rows.map(r => Number.isNaN(r.h2s) ? null : r.h2s);
-      chart2.data.datasets[1].data = rows.map(r => Number.isNaN(r.o2) ? null : r.o2);
-      chart2.data.datasets[2].data = rows.map(r => Number.isNaN(r.ph) ? null : r.ph);
-      chart2.update("none");
+      chartGas.data.labels = labels;
+      chartGas.data.datasets[0].data = rows.map(r => r.ch4 ?? null);
+      chartGas.data.datasets[1].data = rows.map(r => r.co2 ?? null);
+      chartGas.data.datasets[2].data = rows.map(r => r.h2sPpm ?? null);
+      chartGas.update("none");
+
+      chartLiquid.data.labels = labels;
+      chartLiquid.data.datasets[0].data = rows.map(r => r.ph ?? null);
+      chartLiquid.data.datasets[1].data = rows.map(r => r.ec ?? null);
+      chartLiquid.data.datasets[2].data = rows.map(r => r.dissolvedOxygen ?? null);
+      chartLiquid.update("none");
 
       return true;
     }
 
-    async function fetchEvents() {
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;");
+    }
+
+    async function fetchEvents(){
       const raw = await getJson(`/devices/${DEVICE_ID}/events`).catch(() => null);
       const box = document.getElementById("eventLog");
-      if (!box) return false;
+      if(!box) return false;
 
-      if (!raw || typeof raw !== "object") {
-        box.innerHTML = "No events yet.";
+      if(!raw || typeof raw !== "object"){
+        box.innerHTML = "Событий пока нет";
         return false;
       }
 
       let rows = Object.values(raw).filter(v => v && typeof v === "object");
-      rows.sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+      rows.sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
       rows = rows.slice(0, 30);
-
-      if (!rows.length) {
-        box.innerHTML = "No events yet.";
-        return false;
-      }
 
       box.innerHTML = rows.map(e => `
         <div class="event-item">
-          <div class="event-title">${escapeHtml(e.event || "Event")}</div>
+          <div class="event-title">${esc(e.event || "Event")}</div>
           <div class="event-meta">
-            level: ${escapeHtml(e.level || "--")} |
-            source: ${escapeHtml(e.source || "--")} |
-            ts: ${escapeHtml(e.timestamp || "--")}
+            level: ${esc(e.level || "--")} | source: ${esc(e.source || "--")} | ts: ${esc(e.timestamp || "--")}
           </div>
-          <div class="event-details">${escapeHtml(e.details || "")}</div>
+          <div class="event-meta">${esc(e.details || "")}</div>
         </div>
       `).join("");
 
       return true;
     }
 
-    async function setMode(mode) {
-      try {
-        const path = `/devices/${DEVICE_ID}/control/current`;
-        const cur = (await getJson(path).catch(() => ({}))) || {};
-
-        const payload = {
-          mode,
-          heater: cur.heater ?? false,
-          ventilation: cur.ventilation ?? false,
-          pump: cur.pump ?? false
-        };
-
-        await putJson(path, payload);
-        setStatus(`Status: mode changed to ${mode}`);
-        setTimeout(refreshAll, 400);
-      } catch (err) {
-        console.error("Mode write error:", err);
-        alert("Failed to write mode to Firebase");
-      }
-    }
-
-    async function setControl(key, value) {
-      try {
-        const path = `/devices/${DEVICE_ID}/control/current`;
-        const cur = (await getJson(path).catch(() => ({}))) || {};
-
-        const payload = {
-          mode: "MANUAL",
-          heater: cur.heater ?? false,
-          ventilation: cur.ventilation ?? false,
-          pump: cur.pump ?? false
-        };
-
-        if (key === "heater") payload.heater = value;
-        if (key === "ventilation") payload.ventilation = value;
-
-        await putJson(path, payload);
-        setStatus(`Status: ${key} set to ${value ? "ON" : "OFF"}`);
-        setTimeout(refreshAll, 400);
-      } catch (err) {
-        console.error("Control write error:", err);
-        alert("Failed to write control command to Firebase");
-      }
-    }
-
-    async function saveSettings() {
-      try {
-        const path = `/devices/${DEVICE_ID}/settings/current`;
-
-        const payload = {
-          minTemperature: parseFloat(document.getElementById("cfg_minTemperature").value),
-          maxTemperature: parseFloat(document.getElementById("cfg_maxTemperature").value),
-          h2sOnLevel: parseFloat(document.getElementById("cfg_h2sOnLevel").value),
-          h2sOffLevel: parseFloat(document.getElementById("cfg_h2sOffLevel").value),
-          phMin: parseFloat(document.getElementById("cfg_phMin").value),
-          phMax: parseFloat(document.getElementById("cfg_phMax").value)
-        };
-
-        await putJson(path, payload);
-        setStatus("Status: thresholds saved successfully");
-        setTimeout(refreshAll, 400);
-      } catch (err) {
-        console.error("Settings write error:", err);
-        alert("Failed to save settings to Firebase");
-      }
-    }
-
-    async function refreshAll() {
-      try {
-        const currentOk = await fetchCurrent();
-        const settingsOk = await fetchSettings();
-        const historyOk = await fetchHistory();
+    async function refreshAll(){
+      try{
+        const a = await fetchCurrent();
+        await fetchSettings();
+        await fetchHistory();
         await fetchEvents();
 
-        if (currentOk || settingsOk || historyOk) {
-          setStatus("Status: connected to Firebase");
-          setText("st_firebase", "Connected");
-        } else {
-          setStatus("Status: connected, but no valid data found yet");
-          setText("st_firebase", "Connected");
+        if(a){
+          setStatus("Статус: подключено к Firebase");
+        }else{
+          setStatus("Статус: данных пока нет");
         }
-      } catch (err) {
-        console.error("Refresh error:", err);
-        setStatus("Status: failed to load data. Check Firebase URL, DEVICE_ID, rules, and data structure.");
-        setText("st_firebase", "Error");
+      }catch(err){
+        console.error(err);
+        setStatus("Статус: ошибка загрузки");
       }
     }
 
     ensureCharts();
     refreshAll();
-    setInterval(refreshAll, 1000);
+    setInterval(refreshAll, 1500);
   </script>
 </body>
 </html>
