@@ -78,7 +78,7 @@
     .recommend-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
     .recommend-text { font-size: 18px; line-height: 1.45; }
     .control-row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
-    .btn-chip { padding: 12px 18px; border-radius: 18px; font-weight: 800; color: #05162e; }
+    .btn-chip { padding: 12px 18px; border-radius: 18px; font-weight: 800; color: #05162e; border:0; cursor:pointer; font-size:16px; }
     .btn-auto, .btn-manual { background:#86afff; }
     .btn-on { background:#51e97d; }
     .btn-off { background:#ff7c7e; }
@@ -218,18 +218,18 @@
         <div class="tag">CONTROL</div>
       </div>
       <div class="control-row">
-        <div class="btn-chip btn-auto">AUTO</div>
-        <div class="btn-chip btn-manual">MANUAL</div>
-        <div class="btn-chip btn-on">Heater ON</div>
-        <div class="btn-chip btn-off">Heater OFF</div>
-        <div class="btn-chip btn-on">Vent ON</div>
-        <div class="btn-chip btn-off">Vent OFF</div>
-        <div class="btn-chip btn-on">Pump ON</div>
-        <div class="btn-chip btn-off">Pump OFF</div>
-        <div class="btn-chip btn-on">Mixer ON</div>
-        <div class="btn-chip btn-off">Mixer OFF</div>
-        <div class="btn-chip btn-on">Valve OPEN</div>
-        <div class="btn-chip btn-off">Valve CLOSE</div>
+        <button id="btnAuto" class="btn-chip btn-auto" type="button">AUTO</button>
+        <button id="btnManual" class="btn-chip btn-manual" type="button">MANUAL</button>
+        <button id="btnHeaterOn" class="btn-chip btn-on" type="button">Heater ON</button>
+        <button id="btnHeaterOff" class="btn-chip btn-off" type="button">Heater OFF</button>
+        <button id="btnVentOn" class="btn-chip btn-on" type="button">Vent ON</button>
+        <button id="btnVentOff" class="btn-chip btn-off" type="button">Vent OFF</button>
+        <button id="btnPumpOn" class="btn-chip btn-on" type="button">Pump ON</button>
+        <button id="btnPumpOff" class="btn-chip btn-off" type="button">Pump OFF</button>
+        <button id="btnMixerOn" class="btn-chip btn-on" type="button">Mixer ON</button>
+        <button id="btnMixerOff" class="btn-chip btn-off" type="button">Mixer OFF</button>
+        <button id="btnValveOpen" class="btn-chip btn-on" type="button">Valve OPEN</button>
+        <button id="btnValveClose" class="btn-chip btn-off" type="button">Valve CLOSE</button>
       </div>
       <div class="grid grid-5">
         <div id="card-heater" class="card"><div class="label">Heater</div><div id="heaterState" class="value">--</div><div class="unit">thermal conditioning</div></div>
@@ -501,6 +501,78 @@
       });
     }
 
+
+    async function putJson(path, data) {
+      const res = await fetch(`${DB}${path}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error(`PUT ${path} -> HTTP ${res.status}`);
+      return res.json().catch(() => null);
+    }
+
+    async function getControlState() {
+      return (await getJson(`/devices/${DEVICE}/control/current`)) || {
+        mode: 'AUTO',
+        heater: false,
+        ventilation: false,
+        pump: false,
+        mixer: false,
+        valve: false
+      };
+    }
+
+    async function updateControl(patch) {
+      const current = await getControlState();
+      const next = {
+        mode: patch.mode ?? current.mode ?? 'AUTO',
+        heater: patch.heater ?? current.heater ?? false,
+        ventilation: patch.ventilation ?? current.ventilation ?? false,
+        pump: patch.pump ?? current.pump ?? false,
+        mixer: patch.mixer ?? current.mixer ?? false,
+        valve: patch.valve ?? current.valve ?? false
+      };
+      await putJson(`/devices/${DEVICE}/control/current`, next);
+      await refresh();
+    }
+
+    function bindControls() {
+      const bind = (id, patch) => {
+        const node = el(id);
+        if (!node) return;
+        node.addEventListener('click', async () => {
+          try {
+            node.disabled = true;
+            await updateControl(patch);
+          } catch (e) {
+            console.error(e);
+            alert('Не удалось отправить команду в Firebase.');
+          } finally {
+            node.disabled = false;
+          }
+        });
+      };
+
+      bind('btnAuto', { mode: 'AUTO' });
+      bind('btnManual', { mode: 'MANUAL' });
+
+      bind('btnHeaterOn', { mode: 'MANUAL', heater: true });
+      bind('btnHeaterOff', { mode: 'MANUAL', heater: false });
+
+      bind('btnVentOn', { mode: 'MANUAL', ventilation: true });
+      bind('btnVentOff', { mode: 'MANUAL', ventilation: false });
+
+      bind('btnPumpOn', { mode: 'MANUAL', pump: true });
+      bind('btnPumpOff', { mode: 'MANUAL', pump: false });
+
+      bind('btnMixerOn', { mode: 'MANUAL', mixer: true });
+      bind('btnMixerOff', { mode: 'MANUAL', mixer: false });
+
+      bind('btnValveOpen', { mode: 'MANUAL', valve: true });
+      bind('btnValveClose', { mode: 'MANUAL', valve: false });
+    }
+
     async function refresh() {
       try {
         const [current, settings, history, events] = await Promise.all([
@@ -519,6 +591,7 @@
       }
     }
 
+    bindControls();
     refresh();
     setInterval(refresh, 3000);
   </script>
