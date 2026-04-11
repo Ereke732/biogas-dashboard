@@ -1,599 +1,1704 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lab-on-chip / biosensor dashboard</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lab-on-Chip / Biosensor Platform — Stage 2</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      --bg: #06142b;
-      --panel: #0a1f47;
-      --panel-2: #0d2756;
-      --line: #183d7d;
-      --text: #ecf3ff;
-      --muted: #9eb6e0;
-      --green: #42e38a;
-      --yellow: #ffca55;
-      --red: #ff6b7a;
-      --cyan: #5bc9ff;
-      --shadow: 0 10px 30px rgba(0,0,0,.25);
+    :root{
+      --bg:#061125;
+      --bg2:#081a36;
+      --panel:#0b1d3f;
+      --panel2:#0f234c;
+      --card:#0a1a3a;
+      --card-border:#1c3f7f;
+      --text:#edf3ff;
+      --muted:#9fb2df;
+      --accent:#62c0ff;
+      --good:#31d17c;
+      --warn:#ffc857;
+      --danger:#ff6b6b;
+      --ml:#ffbf6b;
+      --liq:#82ffbf;
+      --gas:#7fd1ff;
+      --shadow:0 10px 30px rgba(0,0,0,.28);
+      --radius:22px;
+      --radius-sm:16px;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
+
+    * { box-sizing:border-box; }
+    html, body { height:100%; }
+    body{
+      margin:0;
       font-family: Arial, Helvetica, sans-serif;
-      background: radial-gradient(circle at top, #0b2352, var(--bg) 45%);
-      color: var(--text);
+      color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(59,106,221,.14), transparent 25%),
+        radial-gradient(circle at top left, rgba(0,217,255,.08), transparent 18%),
+        linear-gradient(180deg, #061126 0%, #07172f 30%, #061125 100%);
     }
-    .container { max-width: 1650px; margin: 0 auto; padding: 22px; }
-    .hero, .section { background: linear-gradient(180deg, rgba(13,39,86,.96), rgba(7,23,51,.96)); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
-    .hero { padding: 26px; margin-bottom: 18px; }
-    .title { font-size: 32px; font-weight: 800; line-height: 1.15; margin: 0 0 10px; }
-    .subtitle { color: var(--muted); font-size: 15px; margin-bottom: 12px; }
-    .pill-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-    .pill { border: 1px solid var(--line); background: rgba(18,44,91,.9); color: var(--text); padding: 10px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; }
-    .pill.green { color: #9cffcb; }
-    .pill.yellow { color: #ffd681; }
-    .status { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: rgba(14,54,61,.55); border: 1px solid #126f73; color: #9bfff2; font-weight: 800; margin: 8px 0 2px; }
-    .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #45ff93; box-shadow: 0 0 15px #45ff93; }
-    .section { padding: 18px; margin-bottom: 18px; }
-    .section-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom: 14px; }
-    .section-title { margin: 0; font-size: 26px; font-weight: 800; }
-    .section-subtitle { color: var(--muted); margin-top: 6px; line-height: 1.4; }
-    .tag { border: 1px solid var(--line); padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 800; color: #c9d8ff; background: rgba(20,46,96,.72); white-space: nowrap; }
-    .grid { display:grid; gap:14px; }
-    .grid-6 { grid-template-columns: repeat(6, 1fr); }
-    .grid-7 { grid-template-columns: repeat(7, 1fr); }
-    .grid-8 { grid-template-columns: repeat(8, 1fr); }
-    .grid-5 { grid-template-columns: repeat(5, 1fr); }
-    .card {
-      min-height: 124px;
-      background: linear-gradient(180deg, rgba(4,20,50,.82), rgba(5,17,39,.92));
-      border: 1px solid var(--line);
-      border-radius: 20px;
+
+    .hero{
+      border-bottom:1px solid rgba(128,164,255,.12);
+      background:
+        linear-gradient(180deg, rgba(17,34,72,.96), rgba(8,20,44,.98));
+      box-shadow: var(--shadow);
+    }
+
+    .hero-inner{
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px 20px 18px;
+    }
+
+    .hero-title{
+      margin:0;
+      font-size: clamp(26px, 3vw, 40px);
+      line-height:1.12;
+      font-weight: 800;
+      letter-spacing:.2px;
+    }
+
+    .hero-subtitle{
+      margin:10px 0 6px;
+      font-size: 17px;
+      color:#c8d7ff;
+    }
+
+    .hero-status{
+      font-size: 14px;
+      color:#a9bbeb;
+      margin-top:4px;
+    }
+
+    .hero-online{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin-top:12px;
+      padding:8px 14px;
+      border-radius:999px;
+      background:rgba(49,209,124,.12);
+      color:#9cf5c1;
+      font-weight:700;
+      font-size:13px;
+      border:1px solid rgba(49,209,124,.2);
+    }
+
+    .hero-online::before{
+      content:"";
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:#32e27c;
+      box-shadow: 0 0 12px #32e27c;
+    }
+
+    .hero-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .hero-tag{
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(140,170,255,.12);
+      color:#ccdbff;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .hero-tag.gas{ color:var(--gas); }
+    .hero-tag.liquid{ color:var(--liq); }
+    .hero-tag.ml{ color:var(--ml); }
+    .hero-tag.cloud{ color:#8fb5ff; }
+
+    .container{
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 18px 20px 42px;
+      display:grid;
+      gap:18px;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(13,30,66,.96), rgba(10,24,53,.98));
+      border:1px solid rgba(70,110,200,.22);
+      border-radius: var(--radius);
       padding: 16px;
-      position: relative;
-      overflow: hidden;
+      box-shadow: var(--shadow);
     }
-    .card::after {
-      content: "";
-      position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #68a9ff, #8ab8ff);
-      opacity: .9;
+
+    .panel-header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
     }
-    .card.good::after { background: linear-gradient(90deg, #35d37a, #58f6b0); }
-    .card.warn::after { background: linear-gradient(90deg, #d99f28, #ffd061); }
-    .card.danger::after { background: linear-gradient(90deg, #ff5f75, #ff9b7a); }
-    .label { color: #e4edff; font-size: 15px; margin-bottom: 10px; }
-    .value { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
-    .unit { color: var(--muted); font-size: 14px; }
-    .badge { display:inline-block; margin-top: 12px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; border:1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.06); }
-    .badge.good { color: #9cffcb; }
-    .badge.warn { color: #ffd275; }
-    .badge.danger { color: #ff98a4; }
-    .recommend { min-height: 88px; padding: 18px; border-radius: 18px; border:1px solid var(--line); background: rgba(4,20,50,.55); }
-    .recommend-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .recommend-text { font-size: 18px; line-height: 1.45; }
-    .control-row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
-    .btn-chip { padding: 12px 18px; border-radius: 18px; font-weight: 800; color: #05162e; border:0; cursor:pointer; font-size:16px; }
-    .btn-auto, .btn-manual { background:#86afff; }
-    .btn-on { background:#51e97d; }
-    .btn-off { background:#ff7c7e; }
-    .chart-box { background: rgba(4,20,50,.72); border:1px solid var(--line); border-radius: 20px; padding: 16px; }
-    .chart-title { font-size: 18px; font-weight: 800; margin: 6px 0 12px; }
-    .events { display:flex; flex-direction:column; gap: 14px; max-height: 540px; overflow:auto; }
-    .event { border:1px solid var(--line); border-left-width: 5px; border-radius: 18px; padding: 16px; background: rgba(4,20,50,.74); }
-    .event.info { border-left-color: #65b0ff; }
-    .event.warn { border-left-color: #ffc857; }
-    .event.danger { border-left-color: #ff7485; }
-    .event-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .event-meta { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
-    .muted { color: var(--muted); }
-    .footer { text-align:center; color: var(--muted); padding: 12px 0 4px; }
-    @media (max-width: 1400px) { .grid-8 { grid-template-columns: repeat(4, 1fr); } .grid-7 { grid-template-columns: repeat(4, 1fr); } .grid-6 { grid-template-columns: repeat(3, 1fr); } .grid-5 { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 900px)  { .grid-8, .grid-7, .grid-6, .grid-5 { grid-template-columns: repeat(2, 1fr); } .title { font-size: 24px; } }
-    @media (max-width: 560px)  { .grid-8, .grid-7, .grid-6, .grid-5 { grid-template-columns: 1fr; } .title { font-size: 20px; } }
+
+    .section-title{
+      margin:0;
+      font-size: 22px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+
+    .section-title.gas { color: var(--gas); }
+    .section-title.liquid { color: var(--liq); }
+    .section-title.ml { color: var(--ml); }
+    .section-title.analytics { color: #b7c7ff; }
+
+    .section-subtitle{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+      max-width: 980px;
+    }
+
+    .mini-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(140,170,255,.12);
+      color:#d8e4ff;
+      font-size:12px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .grid{
+      display:grid;
+      gap:14px;
+    }
+
+    .state-grid{ grid-template-columns: repeat(6, minmax(0,1fr)); }
+    .gas-grid{ grid-template-columns: repeat(7, minmax(0,1fr)); }
+    .liquid-grid{ grid-template-columns: repeat(8, minmax(0,1fr)); }
+    .optical-grid{ grid-template-columns: repeat(6, minmax(0,1fr)); }
+    .analytics-grid{ grid-template-columns: repeat(6, minmax(0,1fr)); }
+    .control-grid{ grid-template-columns: repeat(5, minmax(0,1fr)); }
+
+    .metric-card, .state-card, .control-state-card{
+      position:relative;
+      overflow:hidden;
+      background: linear-gradient(180deg, rgba(8,20,47,.98), rgba(7,18,41,.98));
+      border:1px solid rgba(44,86,171,.45);
+      border-radius: var(--radius-sm);
+      padding: 14px 14px 13px;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      min-height: 112px;
+    }
+
+    .metric-card:hover, .state-card:hover, .control-state-card:hover{
+      transform: translateY(-2px);
+    }
+
+    .metric-card::after, .control-state-card::after{
+      content:"";
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height:5px;
+      opacity:.96;
+      background: linear-gradient(90deg, #315a9b, #4e84db);
+    }
+
+    .metric-card.status-normal{
+      border-color: rgba(49,209,124,.45);
+      box-shadow: 0 0 0 1px rgba(49,209,124,.06), 0 0 20px rgba(49,209,124,.08);
+    }
+    .metric-card.status-normal::after{
+      background: linear-gradient(90deg, #1ecb6b, #58f29a);
+    }
+
+    .metric-card.status-warn{
+      border-color: rgba(255,200,87,.45);
+      box-shadow: 0 0 0 1px rgba(255,200,87,.07), 0 0 20px rgba(255,200,87,.08);
+    }
+    .metric-card.status-warn::after{
+      background: linear-gradient(90deg, #ffb33a, #ffd36b);
+    }
+
+    .metric-card.status-danger{
+      border-color: rgba(255,107,107,.5);
+      box-shadow: 0 0 0 1px rgba(255,107,107,.09), 0 0 20px rgba(255,107,107,.10);
+    }
+    .metric-card.status-danger::after{
+      background: linear-gradient(90deg, #ff5c5c, #ff8a8a);
+    }
+
+    .metric-label{
+      font-size: 13px;
+      color:#b8c8ee;
+      margin-bottom: 8px;
+      min-height: 16px;
+    }
+
+    .metric-value{
+      font-size: clamp(20px, 2vw, 28px);
+      font-weight: 800;
+      letter-spacing:.2px;
+      line-height:1.15;
+      word-break: break-word;
+    }
+
+    .metric-unit{
+      margin-top:5px;
+      font-size: 12px;
+      color:#89a3d8;
+      min-height:14px;
+    }
+
+    .metric-state{
+      margin-top:10px;
+      display:inline-block;
+      font-size:11px;
+      font-weight:700;
+      padding:4px 9px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      color:#c7d6ff;
+      border:1px solid rgba(255,255,255,.05);
+    }
+
+    .metric-state.normal{
+      background: rgba(30,203,107,.12);
+      color:#7dffb7;
+      border-color: rgba(30,203,107,.18);
+    }
+    .metric-state.warn{
+      background: rgba(255,186,59,.12);
+      color:#ffd36b;
+      border-color: rgba(255,186,59,.18);
+    }
+    .metric-state.danger{
+      background: rgba(255,92,92,.14);
+      color:#ff9b9b;
+      border-color: rgba(255,92,92,.18);
+    }
+
+    .state-card .metric-value{
+      font-size: clamp(18px, 2vw, 24px);
+    }
+
+    .state-card{
+      min-height: 98px;
+    }
+
+    .state-card::after{
+      content:"";
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height:5px;
+      background: linear-gradient(90deg, #345892, #5f8fde);
+    }
+
+    .control-toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .control-btn{
+      border:none;
+      cursor:pointer;
+      border-radius:14px;
+      padding:12px 16px;
+      font-size:14px;
+      font-weight:800;
+      color:#0a1226;
+      transition: transform .16s ease, filter .16s ease, opacity .16s ease;
+      box-shadow: var(--shadow);
+    }
+
+    .control-btn:hover{ transform: translateY(-1px); filter: brightness(1.06); }
+    .control-btn.mode{ background:#7ea8ff; color:#051226; }
+    .control-btn.on{ background:#45d97d; color:#041c10; }
+    .control-btn.off{ background:#ff7373; color:#2b0909; }
+    .control-btn.secondary{
+      background:#364c7f;
+      color:#eef5ff;
+    }
+    .control-btn.active-outline{
+      outline:2px solid rgba(255,255,255,.8);
+      outline-offset:2px;
+    }
+
+    .control-state-card.on{
+      border-color: rgba(49,209,124,.45);
+      box-shadow: 0 0 0 1px rgba(49,209,124,.06), 0 0 18px rgba(49,209,124,.08);
+    }
+    .control-state-card.on::after{
+      background: linear-gradient(90deg, #1ecb6b, #58f29a);
+    }
+    .control-state-card.off{
+      border-color: rgba(255,107,107,.35);
+    }
+    .control-state-card.off::after{
+      background: linear-gradient(90deg, #6379a6, #4c6191);
+    }
+
+    .settings-grid{
+      display:grid;
+      grid-template-columns: repeat(7, minmax(0,1fr));
+      gap:14px;
+      margin-top:12px;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+    }
+
+    .field label{
+      font-size:13px;
+      color:#c8d7ff;
+      font-weight:700;
+    }
+
+    .field input{
+      width:100%;
+      background:#081731;
+      border:1px solid rgba(63,104,191,.42);
+      color:var(--text);
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:16px;
+      outline:none;
+    }
+
+    .field input:focus{
+      border-color:#73b6ff;
+      box-shadow: 0 0 0 3px rgba(115,182,255,.12);
+    }
+
+    .settings-actions{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .primary-btn{
+      border:none;
+      cursor:pointer;
+      border-radius:16px;
+      padding:13px 18px;
+      background: linear-gradient(90deg, #39d56f, #62e89c);
+      color:#04190c;
+      font-size:15px;
+      font-weight:800;
+      box-shadow: var(--shadow);
+    }
+
+    .secondary-btn{
+      border:none;
+      cursor:pointer;
+      border-radius:16px;
+      padding:13px 18px;
+      background: #273a66;
+      color:#eef5ff;
+      font-size:15px;
+      font-weight:800;
+      box-shadow: var(--shadow);
+    }
+
+    .recommendation-box{
+      margin-top:14px;
+      padding:16px 18px;
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(10,28,62,.96), rgba(7,20,47,.98));
+      border:1px solid rgba(74,118,209,.30);
+    }
+
+    .recommendation-title{
+      font-size:14px;
+      font-weight:800;
+      color:#b6cbff;
+      margin-bottom:8px;
+    }
+
+    .recommendation-value{
+      font-size:16px;
+      line-height:1.5;
+      color:#eef4ff;
+    }
+
+    .chart-stack{
+      display:grid;
+      gap:16px;
+    }
+
+    .chart-card{
+      background: linear-gradient(180deg, rgba(7,19,43,.95), rgba(7,19,43,.98));
+      border:1px solid rgba(50,84,155,.38);
+      border-radius:20px;
+      padding:14px;
+      min-height: 310px;
+    }
+
+    .chart-title{
+      font-size:16px;
+      font-weight:800;
+      margin-bottom:10px;
+      color:#d7e5ff;
+    }
+
+    canvas{
+      width:100% !important;
+      height:250px !important;
+      filter: drop-shadow(0 0 8px rgba(30,72,170,.18));
+    }
+
+    .event-list{
+      display:grid;
+      gap:12px;
+      max-height: 480px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .event-card{
+      background: linear-gradient(180deg, rgba(8,20,47,.98), rgba(7,18,41,.98));
+      border:1px solid rgba(53,86,150,.4);
+      border-left:4px solid #2f4f8c;
+      border-radius:16px;
+      padding:14px 14px 12px;
+    }
+
+    .event-card.info{ border-left-color:#5ca8ff; }
+    .event-card.warn{ border-left-color:#ffbf52; }
+    .event-card.danger{ border-left-color:#ff6a6a; }
+
+    .event-title{
+      font-size:16px;
+      font-weight:800;
+      margin-bottom:6px;
+      color:#f2f7ff;
+    }
+
+    .event-meta{
+      font-size:13px;
+      color:#9db3e4;
+      margin-bottom:7px;
+    }
+
+    .event-details{
+      font-size:14px;
+      line-height:1.45;
+      color:#dce7ff;
+    }
+
+    .empty{
+      padding:18px;
+      border-radius:16px;
+      background: rgba(255,255,255,.03);
+      border:1px solid rgba(125,160,240,.16);
+      color:#c7d8ff;
+      font-weight:700;
+    }
+
+    .footer-note{
+      color:#91a6d8;
+      font-size:13px;
+      text-align:center;
+      padding-top:4px;
+    }
+
+    .toast-wrap{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 9999;
+      display:grid;
+      gap:10px;
+      width:min(420px, calc(100vw - 36px));
+    }
+
+    .toast{
+      padding:14px 16px;
+      border-radius:16px;
+      border:1px solid rgba(100,130,210,.28);
+      background: linear-gradient(180deg, rgba(13,32,70,.98), rgba(8,20,47,.98));
+      box-shadow: var(--shadow);
+      font-size:14px;
+      line-height:1.45;
+      color:#eef5ff;
+    }
+
+    .toast.success{ border-color: rgba(49,209,124,.35); }
+    .toast.warn{ border-color: rgba(255,200,87,.35); }
+    .toast.error{ border-color: rgba(255,107,107,.35); }
+
+    @media (max-width: 1400px){
+      .state-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .gas-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+      .liquid-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+      .optical-grid, .analytics-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .settings-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 900px){
+      .state-grid, .gas-grid, .liquid-grid, .optical-grid, .analytics-grid, .control-grid, .settings-grid{
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+      .hero-inner, .container{ padding-left:14px; padding-right:14px; }
+      .metric-card, .state-card, .control-state-card{ min-height: 102px; }
+      .control-toolbar{ gap:8px; }
+      .control-btn{ padding:11px 14px; font-size:13px; }
+    }
+
+    @media (max-width: 560px){
+      .state-grid, .gas-grid, .liquid-grid, .optical-grid, .analytics-grid, .control-grid, .settings-grid{
+        grid-template-columns: 1fr;
+      }
+      .hero-title{ font-size:28px; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <section class="hero">
-      <h1 class="title">Lab-on-chip / biosensor платформа для экспресс-анализа малых проб биосмеси</h1>
-      <div class="subtitle">Сенсорный слайд / biosensor slide / lab-on-chip cartridge → измерение параметров → ML-аналитика → облачная передача в веб-интерфейс</div>
-      <div id="liveStatus" class="status"><span class="status-dot"></span><span>WAITING FOR LIVE DATA</span></div>
-      <div class="pill-row">
-        <div class="pill green">LIQUID SAMPLE MODE</div>
-        <div class="pill">PHYSICO-CHEMICAL SENSORS</div>
-        <div class="pill yellow">ML / ANALYTICAL MODULE</div>
-        <div class="pill">FIREBASE CLOUD + WEB DASHBOARD</div>
+  <header class="hero">
+    <div class="hero-inner">
+      <h1 class="hero-title">Lab-on-chip / biosensor платформа для экспресс-анализа малых проб биосмеси</h1>
+      <div class="hero-subtitle">
+        Сенсорный слайд / biosensor slide / lab-on-chip cartridge → измерение параметров → ML-аналитика → облачная передача в веб-интерфейс
       </div>
-    </section>
+      <div class="hero-status" id="heroStatusText">Статус: ожидание данных...</div>
+      <div class="hero-online" id="heroOnlineBadge">ONLINE LAB-ON-CHIP STREAM</div>
 
-    <section class="section">
-      <div class="section-head">
+      <div class="hero-tags">
+        <div class="hero-tag liquid">LIQUID SAMPLE MODE</div>
+        <div class="hero-tag gas">PHYSICO-CHEMICAL SENSORS</div>
+        <div class="hero-tag ml">ML / ANALYTICAL MODULE</div>
+        <div class="hero-tag cloud">FIREBASE CLOUD + WEB DASHBOARD</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <div class="panel-header">
         <div>
           <h2 class="section-title">Состояние системы</h2>
-          <div class="section-subtitle">Общий статус устройства, соединения, прошивки и потока измерений с сенсорного слайда.</div>
+          <div class="section-subtitle">
+            Общий статус устройства, соединения, прошивки и потока измерений с сенсорного слайда.
+          </div>
         </div>
-        <div class="tag" id="systemBand">NO DATA YET</div>
+        <div class="mini-badge" id="miniSystemBadge">DATA STREAM</div>
       </div>
-      <div class="grid grid-6">
-        <div id="card-mode" class="card"><div class="label">Режим</div><div id="mode" class="value">--</div><div class="unit">Control mode</div></div>
-        <div id="card-wifi" class="card"><div class="label">Wi‑Fi</div><div id="wifi" class="value">--</div><div class="unit">Wireless link</div></div>
-        <div id="card-fb" class="card"><div class="label">Firebase</div><div id="firebase" class="value">--</div><div class="unit">Cloud database</div></div>
-        <div id="card-fw" class="card"><div class="label">Прошивка</div><div id="firmware" class="value">--</div><div class="unit">Firmware version</div></div>
-        <div id="card-dev" class="card"><div class="label">Device ID</div><div id="deviceId" class="value">--</div><div class="unit">Hardware node</div></div>
-        <div id="card-up" class="card"><div class="label">Uptime</div><div id="uptimeSec" class="value">--</div><div class="unit">Seconds</div></div>
+
+      <div class="grid state-grid">
+        <div class="state-card">
+          <div class="metric-label">Режим</div>
+          <div class="metric-value" id="state-mode">--</div>
+          <div class="metric-unit">Control mode</div>
+        </div>
+        <div class="state-card">
+          <div class="metric-label">Wi-Fi</div>
+          <div class="metric-value" id="state-wifi">--</div>
+          <div class="metric-unit">Wireless link</div>
+        </div>
+        <div class="state-card">
+          <div class="metric-label">Firebase</div>
+          <div class="metric-value" id="state-firebase">--</div>
+          <div class="metric-unit">Cloud database</div>
+        </div>
+        <div class="state-card">
+          <div class="metric-label">Прошивка</div>
+          <div class="metric-value" id="state-firmware">--</div>
+          <div class="metric-unit">Firmware version</div>
+        </div>
+        <div class="state-card">
+          <div class="metric-label">Device ID</div>
+          <div class="metric-value" id="state-deviceId">--</div>
+          <div class="metric-unit">Hardware node</div>
+        </div>
+        <div class="state-card">
+          <div class="metric-label">Uptime</div>
+          <div class="metric-value" id="state-uptime">--</div>
+          <div class="metric-unit">Seconds</div>
+        </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
-          <h2 class="section-title">Газовый модуль / headspace channel</h2>
-          <div class="section-subtitle">Вспомогательный блок летучей и газовой фазы: CH4, CO2, H2S, O2, температура, влажность и давление.</div>
+          <h2 class="section-title gas">Газовый модуль / headspace channel</h2>
+          <div class="section-subtitle">
+            Вспомогательный блок летучей и газовой фазы: CH4, CO2, H2S, O2, температура, влажность и давление.
+          </div>
         </div>
-        <div class="tag">AUXILIARY GAS ANALYTICS</div>
+        <div class="mini-badge">AUXILIARY GAS ANALYTICS</div>
       </div>
-      <div class="grid grid-7">
-        <div id="card-ch4" class="card"><div class="label">CH4</div><div id="ch4" class="value">--</div><div class="unit">% vol</div></div>
-        <div id="card-co2" class="card"><div class="label">CO2</div><div id="co2" class="value">--</div><div class="unit">% vol</div></div>
-        <div id="card-h2s" class="card"><div class="label">H2S</div><div id="h2sPpm" class="value">--</div><div class="unit">ppm</div></div>
-        <div id="card-o2" class="card"><div class="label">O2</div><div id="o2" class="value">--</div><div class="unit">% vol</div></div>
-        <div id="card-gtemp" class="card"><div class="label">Температура газа</div><div id="gasTemperature" class="value">--</div><div class="unit">°C</div></div>
-        <div id="card-hum" class="card"><div class="label">Влажность</div><div id="humidity" class="value">--</div><div class="unit">%RH</div></div>
-        <div id="card-press" class="card"><div class="label">Давление</div><div id="pressure" class="value">--</div><div class="unit">bar</div></div>
+
+      <div class="grid gas-grid">
+        <div class="metric-card" id="card-ch4">
+          <div class="metric-label">CH4</div>
+          <div class="metric-value" id="value-ch4">--</div>
+          <div class="metric-unit">% vol</div>
+          <div class="metric-state" id="state-ch4">--</div>
+        </div>
+        <div class="metric-card" id="card-co2">
+          <div class="metric-label">CO2</div>
+          <div class="metric-value" id="value-co2">--</div>
+          <div class="metric-unit">% vol</div>
+          <div class="metric-state" id="state-co2">--</div>
+        </div>
+        <div class="metric-card" id="card-h2sPpm">
+          <div class="metric-label">H2S</div>
+          <div class="metric-value" id="value-h2sPpm">--</div>
+          <div class="metric-unit">ppm</div>
+          <div class="metric-state" id="state-h2sPpm">--</div>
+        </div>
+        <div class="metric-card" id="card-o2">
+          <div class="metric-label">O2</div>
+          <div class="metric-value" id="value-o2">--</div>
+          <div class="metric-unit">% vol</div>
+          <div class="metric-state" id="state-o2">--</div>
+        </div>
+        <div class="metric-card" id="card-gasTemperature">
+          <div class="metric-label">Температура газа</div>
+          <div class="metric-value" id="value-gasTemperature">--</div>
+          <div class="metric-unit">°C</div>
+          <div class="metric-state" id="state-gasTemperature">--</div>
+        </div>
+        <div class="metric-card" id="card-humidity">
+          <div class="metric-label">Влажность</div>
+          <div class="metric-value" id="value-humidity">--</div>
+          <div class="metric-unit">%RH</div>
+          <div class="metric-state" id="state-humidity">--</div>
+        </div>
+        <div class="metric-card" id="card-pressure">
+          <div class="metric-label">Давление</div>
+          <div class="metric-value" id="value-pressure">--</div>
+          <div class="metric-unit">bar</div>
+          <div class="metric-state" id="state-pressure">--</div>
+        </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
-          <h2 class="section-title" style="color:#8affc8">Жидкая проба / sensor slide</h2>
-          <div class="section-subtitle">Малая проба биосмеси наносится на сенсорное стекло, после чего система определяет физико-химические характеристики жидкой фазы.</div>
+          <h2 class="section-title liquid">Жидкая проба / sensor slide</h2>
+          <div class="section-subtitle">
+            Малая проба биосмеси наносится на сенсорное стекло, после чего система определяет физико-химические характеристики жидкой фазы.
+          </div>
         </div>
-        <div class="tag">BIOSENSOR LIQUID ANALYSIS</div>
+        <div class="mini-badge">BIOSENSOR LIQUID ANALYSIS</div>
       </div>
-      <div class="grid grid-8">
-        <div id="card-ph" class="card"><div class="label">pH</div><div id="ph" class="value">--</div><div class="unit">pH units</div></div>
-        <div id="card-orp" class="card"><div class="label">ORP</div><div id="orp" class="value">--</div><div class="unit">mV</div></div>
-        <div id="card-ec" class="card"><div class="label">EC</div><div id="ec" class="value">--</div><div class="unit">mS/cm</div></div>
-        <div id="card-do" class="card"><div class="label">DO</div><div id="dissolvedOxygen" class="value">--</div><div class="unit">mg/L</div></div>
-        <div id="card-ltemp" class="card"><div class="label">Температура жидкости</div><div id="liquidTemperature" class="value">--</div><div class="unit">°C</div></div>
-        <div id="card-nh4" class="card"><div class="label">Аммоний</div><div id="ammonium" class="value">--</div><div class="unit">mg/L</div></div>
-        <div id="card-no3" class="card"><div class="label">Нитраты</div><div id="nitrate" class="value">--</div><div class="unit">mg/L</div></div>
-        <div id="card-vfa" class="card"><div class="label">VFA</div><div id="vfa" class="value">--</div><div class="unit">g/L</div></div>
+
+      <div class="grid liquid-grid">
+        <div class="metric-card" id="card-ph">
+          <div class="metric-label">pH</div>
+          <div class="metric-value" id="value-ph">--</div>
+          <div class="metric-unit">pH units</div>
+          <div class="metric-state" id="state-ph">--</div>
+        </div>
+        <div class="metric-card" id="card-orp">
+          <div class="metric-label">ORP</div>
+          <div class="metric-value" id="value-orp">--</div>
+          <div class="metric-unit">mV</div>
+          <div class="metric-state" id="state-orp">--</div>
+        </div>
+        <div class="metric-card" id="card-ec">
+          <div class="metric-label">EC</div>
+          <div class="metric-value" id="value-ec">--</div>
+          <div class="metric-unit">mS/cm</div>
+          <div class="metric-state" id="state-ec">--</div>
+        </div>
+        <div class="metric-card" id="card-dissolvedOxygen">
+          <div class="metric-label">DO</div>
+          <div class="metric-value" id="value-dissolvedOxygen">--</div>
+          <div class="metric-unit">mg/L</div>
+          <div class="metric-state" id="state-dissolvedOxygen">--</div>
+        </div>
+        <div class="metric-card" id="card-liquidTemperature">
+          <div class="metric-label">Температура жидкости</div>
+          <div class="metric-value" id="value-liquidTemperature">--</div>
+          <div class="metric-unit">°C</div>
+          <div class="metric-state" id="state-liquidTemperature">--</div>
+        </div>
+        <div class="metric-card" id="card-ammonium">
+          <div class="metric-label">Аммоний</div>
+          <div class="metric-value" id="value-ammonium">--</div>
+          <div class="metric-unit">mg/L</div>
+          <div class="metric-state" id="state-ammonium">--</div>
+        </div>
+        <div class="metric-card" id="card-nitrate">
+          <div class="metric-label">Нитраты</div>
+          <div class="metric-value" id="value-nitrate">--</div>
+          <div class="metric-unit">mg/L</div>
+          <div class="metric-state" id="state-nitrate">--</div>
+        </div>
+        <div class="metric-card" id="card-vfa">
+          <div class="metric-label">VFA</div>
+          <div class="metric-value" id="value-vfa">--</div>
+          <div class="metric-unit">g/L</div>
+          <div class="metric-state" id="state-vfa">--</div>
+        </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
-          <h2 class="section-title" style="color:#ffbf62">Оптический / ML модуль</h2>
-          <div class="section-subtitle">Оптические признаки и вычисленные индексы: спектральный отклик, оптическая плотность, цвет, мутность и оценка качества биомассы.</div>
+          <h2 class="section-title ml">Оптический / ML модуль</h2>
+          <div class="section-subtitle">
+            Оптические признаки и вычисленные индексы: спектральный отклик, оптическая плотность, цвет, мутность и оценка качества биомассы.
+          </div>
         </div>
-        <div class="tag">OPTICAL + ANALYTICAL MODEL</div>
+        <div class="mini-badge">OPTICAL + ANALYTICAL MODEL</div>
       </div>
-      <div class="grid grid-6">
-        <div id="card-nir" class="card"><div class="label">NIR Organic Index</div><div id="nirOrganicIndex" class="value">--</div><div class="unit">index</div></div>
-        <div id="card-bqi" class="card"><div class="label">Biomass Quality Index</div><div id="biomassQualityIndex" class="value">--</div><div class="unit">index</div></div>
-        <div id="card-spec" class="card"><div class="label">Spectral Score</div><div id="spectralScore" class="value">--</div><div class="unit">index</div></div>
-        <div id="card-od" class="card"><div class="label">Optical Density</div><div id="opticalDensity" class="value">--</div><div class="unit">OD</div></div>
-        <div id="card-color" class="card"><div class="label">Color Index</div><div id="colorIndex" class="value">--</div><div class="unit">index</div></div>
-        <div id="card-turb" class="card"><div class="label">Turbidity Index</div><div id="turbidityIndex" class="value">--</div><div class="unit">index</div></div>
+
+      <div class="grid optical-grid">
+        <div class="metric-card" id="card-nirOrganicIndex">
+          <div class="metric-label">NIR Organic Index</div>
+          <div class="metric-value" id="value-nirOrganicIndex">--</div>
+          <div class="metric-unit">index</div>
+          <div class="metric-state" id="state-nirOrganicIndex">--</div>
+        </div>
+        <div class="metric-card" id="card-biomassQualityIndex">
+          <div class="metric-label">Biomass Quality Index</div>
+          <div class="metric-value" id="value-biomassQualityIndex">--</div>
+          <div class="metric-unit">index</div>
+          <div class="metric-state" id="state-biomassQualityIndex">--</div>
+        </div>
+        <div class="metric-card" id="card-spectralScore">
+          <div class="metric-label">Spectral Score</div>
+          <div class="metric-value" id="value-spectralScore">--</div>
+          <div class="metric-unit">index</div>
+          <div class="metric-state" id="state-spectralScore">--</div>
+        </div>
+        <div class="metric-card" id="card-opticalDensity">
+          <div class="metric-label">Optical Density</div>
+          <div class="metric-value" id="value-opticalDensity">--</div>
+          <div class="metric-unit">OD</div>
+          <div class="metric-state" id="state-opticalDensity">--</div>
+        </div>
+        <div class="metric-card" id="card-colorIndex">
+          <div class="metric-label">Color Index</div>
+          <div class="metric-value" id="value-colorIndex">--</div>
+          <div class="metric-unit">index</div>
+          <div class="metric-state" id="state-colorIndex">--</div>
+        </div>
+        <div class="metric-card" id="card-turbidityIndex">
+          <div class="metric-label">Turbidity Index</div>
+          <div class="metric-value" id="value-turbidityIndex">--</div>
+          <div class="metric-unit">index</div>
+          <div class="metric-state" id="state-turbidityIndex">--</div>
+        </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
-          <h2 class="section-title">Интегральные показатели качества</h2>
-          <div class="section-subtitle">Сайт показывает не только сырые датчики, но и аналитические оценки: качество биосмеси, зрелость, пригодность как биоудобрения, риск токсичности и риск разбалансировки процесса.</div>
+          <h2 class="section-title analytics">Интегральные показатели качества</h2>
+          <div class="section-subtitle">
+            Сайт показывает не только сырые датчики, но и аналитические оценки: качество биосмеси, зрелость, пригодность как биоудобрения, риск токсичности и риск разбалансировки процесса.
+          </div>
         </div>
-        <div class="tag" id="qualityBandTop">QUALITY BAND</div>
+        <div class="mini-badge" id="qualityBandBadge">QUALITY BAND</div>
       </div>
-      <div class="grid grid-6">
-        <div id="card-maturity" class="card"><div class="label">Индекс зрелости</div><div id="maturityIndex" class="value">--</div><div class="unit">0–100</div></div>
-        <div id="card-fertilizer" class="card"><div class="label">Пригодность биоудобрения</div><div id="fertilizerSuitabilityIndex" class="value">--</div><div class="unit">0–100</div></div>
-        <div id="card-quality" class="card"><div class="label">Quality Score</div><div id="sampleQualityScore" class="value">--</div><div class="unit">0–100</div></div>
-        <div id="card-toxic" class="card"><div class="label">Риск токсичности</div><div id="toxicityRisk" class="value">--</div><div class="unit">0–100</div></div>
-        <div id="card-imbalance" class="card"><div class="label">Риск разбалансировки</div><div id="imbalanceRisk" class="value">--</div><div class="unit">0–100</div></div>
-        <div id="card-band" class="card"><div class="label">Quality Band</div><div id="qualityBand" class="value">--</div><div class="unit">analytical class</div></div>
+
+      <div class="grid analytics-grid">
+        <div class="metric-card" id="card-maturityIndex">
+          <div class="metric-label">Индекс зрелости</div>
+          <div class="metric-value" id="value-maturityIndex">--</div>
+          <div class="metric-unit">0–100</div>
+          <div class="metric-state" id="state-maturityIndex">--</div>
+        </div>
+        <div class="metric-card" id="card-fertilizerSuitabilityIndex">
+          <div class="metric-label">Пригодность биоудобрения</div>
+          <div class="metric-value" id="value-fertilizerSuitabilityIndex">--</div>
+          <div class="metric-unit">0–100</div>
+          <div class="metric-state" id="state-fertilizerSuitabilityIndex">--</div>
+        </div>
+        <div class="metric-card" id="card-sampleQualityScore">
+          <div class="metric-label">Quality Score</div>
+          <div class="metric-value" id="value-sampleQualityScore">--</div>
+          <div class="metric-unit">0–100</div>
+          <div class="metric-state" id="state-sampleQualityScore">--</div>
+        </div>
+        <div class="metric-card" id="card-toxicityRisk">
+          <div class="metric-label">Риск токсичности</div>
+          <div class="metric-value" id="value-toxicityRisk">--</div>
+          <div class="metric-unit">0–100</div>
+          <div class="metric-state" id="state-toxicityRisk">--</div>
+        </div>
+        <div class="metric-card" id="card-imbalanceRisk">
+          <div class="metric-label">Риск разбалансировки</div>
+          <div class="metric-value" id="value-imbalanceRisk">--</div>
+          <div class="metric-unit">0–100</div>
+          <div class="metric-state" id="state-imbalanceRisk">--</div>
+        </div>
+        <div class="metric-card" id="card-qualityBand">
+          <div class="metric-label">Quality Band</div>
+          <div class="metric-value" id="value-qualityBand">--</div>
+          <div class="metric-unit">analytical class</div>
+          <div class="metric-state" id="state-qualityBand">--</div>
+        </div>
       </div>
-      <div class="recommend" style="margin-top:14px;">
-        <div class="recommend-title">Рекомендация аналитического модуля</div>
-        <div id="recommendation" class="recommend-text">Ожидание данных...</div>
+
+      <div class="recommendation-box">
+        <div class="recommendation-title">Рекомендация аналитического модуля</div>
+        <div class="recommendation-value" id="recommendationText">Ожидание данных...</div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
           <h2 class="section-title">Управление</h2>
-          <div class="section-subtitle">Кнопки ручного и автоматического управления. Для ручного вмешательства исполнительные механизмы переключаются через облачную панель.</div>
+          <div class="section-subtitle">
+            Кнопки ручного и автоматического управления. Для ручного вмешательства исполнительные механизмы переключаются через облачную панель.
+          </div>
         </div>
-        <div class="tag">CONTROL</div>
+        <div class="mini-badge" id="controlModeBadge">CONTROL</div>
       </div>
-      <div class="control-row">
-        <button id="btnAuto" class="btn-chip btn-auto" type="button">AUTO</button>
-        <button id="btnManual" class="btn-chip btn-manual" type="button">MANUAL</button>
-        <button id="btnHeaterOn" class="btn-chip btn-on" type="button">Heater ON</button>
-        <button id="btnHeaterOff" class="btn-chip btn-off" type="button">Heater OFF</button>
-        <button id="btnVentOn" class="btn-chip btn-on" type="button">Vent ON</button>
-        <button id="btnVentOff" class="btn-chip btn-off" type="button">Vent OFF</button>
-        <button id="btnPumpOn" class="btn-chip btn-on" type="button">Pump ON</button>
-        <button id="btnPumpOff" class="btn-chip btn-off" type="button">Pump OFF</button>
-        <button id="btnMixerOn" class="btn-chip btn-on" type="button">Mixer ON</button>
-        <button id="btnMixerOff" class="btn-chip btn-off" type="button">Mixer OFF</button>
-        <button id="btnValveOpen" class="btn-chip btn-on" type="button">Valve OPEN</button>
-        <button id="btnValveClose" class="btn-chip btn-off" type="button">Valve CLOSE</button>
+
+      <div class="control-toolbar">
+        <button class="control-btn mode" id="btnAuto" data-mode="AUTO">AUTO</button>
+        <button class="control-btn mode" id="btnManual" data-mode="MANUAL">MANUAL</button>
+
+        <button class="control-btn on" data-control="heater" data-value="true">Heater ON</button>
+        <button class="control-btn off" data-control="heater" data-value="false">Heater OFF</button>
+
+        <button class="control-btn on" data-control="ventilation" data-value="true">Vent ON</button>
+        <button class="control-btn off" data-control="ventilation" data-value="false">Vent OFF</button>
+
+        <button class="control-btn on" data-control="pump" data-value="true">Pump ON</button>
+        <button class="control-btn off" data-control="pump" data-value="false">Pump OFF</button>
+
+        <button class="control-btn on" data-control="mixer" data-value="true">Mixer ON</button>
+        <button class="control-btn off" data-control="mixer" data-value="false">Mixer OFF</button>
+
+        <button class="control-btn on" data-control="valve" data-value="true">Valve OPEN</button>
+        <button class="control-btn off" data-control="valve" data-value="false">Valve CLOSE</button>
       </div>
-      <div class="grid grid-5">
-        <div id="card-heater" class="card"><div class="label">Heater</div><div id="heaterState" class="value">--</div><div class="unit">thermal conditioning</div></div>
-        <div id="card-venti" class="card"><div class="label">Ventilation</div><div id="ventilationState" class="value">--</div><div class="unit">gas release</div></div>
-        <div id="card-pump" class="card"><div class="label">Pump</div><div id="pumpState" class="value">--</div><div class="unit">circulation</div></div>
-        <div id="card-mixer" class="card"><div class="label">Mixer</div><div id="mixerState" class="value">--</div><div class="unit">homogenization</div></div>
-        <div id="card-valve" class="card"><div class="label">Valve</div><div id="valveState" class="value">--</div><div class="unit">sample/pressure path</div></div>
+
+      <div class="grid control-grid">
+        <div class="control-state-card off" id="control-card-heater">
+          <div class="metric-label">Heater</div>
+          <div class="metric-value" id="control-heater">--</div>
+          <div class="metric-unit">thermal conditioning</div>
+        </div>
+        <div class="control-state-card off" id="control-card-ventilation">
+          <div class="metric-label">Ventilation</div>
+          <div class="metric-value" id="control-ventilation">--</div>
+          <div class="metric-unit">gas release</div>
+        </div>
+        <div class="control-state-card off" id="control-card-pump">
+          <div class="metric-label">Pump</div>
+          <div class="metric-value" id="control-pump">--</div>
+          <div class="metric-unit">circulation</div>
+        </div>
+        <div class="control-state-card off" id="control-card-mixer">
+          <div class="metric-label">Mixer</div>
+          <div class="metric-value" id="control-mixer">--</div>
+          <div class="metric-unit">homogenization</div>
+        </div>
+        <div class="control-state-card off" id="control-card-valve">
+          <div class="metric-label">Valve</div>
+          <div class="metric-value" id="control-valve">--</div>
+          <div class="metric-unit">sample/pressure path</div>
+        </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
           <h2 class="section-title">Пороговые значения</h2>
-          <div class="section-subtitle">После измерения программа фильтрует шум, калибрует значения, сравнивает их с порогами, формирует тревоги и отправляет результаты в Firebase.</div>
+          <div class="section-subtitle">
+            После измерения программа фильтрует шум, калибрует значения, сравнивает их с порогами, формирует тревоги и отправляет результаты в Firebase.
+          </div>
         </div>
-        <div class="tag">SETTINGS / LIMITS</div>
+        <div class="mini-badge">SETTINGS / LIMITS</div>
       </div>
-      <div class="grid grid-6">
-        <div class="card"><div class="label">Gas Temp Min</div><div id="gasTempMin" class="value">--</div></div>
-        <div class="card"><div class="label">Gas Temp Max</div><div id="gasTempMax" class="value">--</div></div>
-        <div class="card"><div class="label">CH4 Low</div><div id="ch4Low" class="value">--</div></div>
-        <div class="card"><div class="label">H2S High</div><div id="h2sHigh" class="value">--</div></div>
-        <div class="card"><div class="label">O2 High</div><div id="o2High" class="value">--</div></div>
-        <div class="card"><div class="label">pH Min</div><div id="phMin" class="value">--</div></div>
-        <div class="card"><div class="label">pH Max</div><div id="phMax" class="value">--</div></div>
-        <div class="card"><div class="label">EC Max</div><div id="ecMax" class="value">--</div></div>
-        <div class="card"><div class="label">DO Min</div><div id="doMin" class="value">--</div></div>
-        <div class="card"><div class="label">NH4 High</div><div id="ammoniumHigh" class="value">--</div></div>
-        <div class="card"><div class="label">NO3 High</div><div id="nitrateHigh" class="value">--</div></div>
-        <div class="card"><div class="label">VFA High</div><div id="vfaHigh" class="value">--</div></div>
+
+      <div class="settings-grid">
+        <div class="field">
+          <label for="gasTempMin">Gas Temp Min</label>
+          <input id="gasTempMin" type="text" />
+        </div>
+        <div class="field">
+          <label for="gasTempMax">Gas Temp Max</label>
+          <input id="gasTempMax" type="text" />
+        </div>
+        <div class="field">
+          <label for="ch4Low">CH4 Low</label>
+          <input id="ch4Low" type="text" />
+        </div>
+        <div class="field">
+          <label for="h2sHigh">H2S High</label>
+          <input id="h2sHigh" type="text" />
+        </div>
+        <div class="field">
+          <label for="o2High">O2 High</label>
+          <input id="o2High" type="text" />
+        </div>
+        <div class="field">
+          <label for="phMin">pH Min</label>
+          <input id="phMin" type="text" />
+        </div>
+        <div class="field">
+          <label for="phMax">pH Max</label>
+          <input id="phMax" type="text" />
+        </div>
+
+        <div class="field">
+          <label for="ecMax">EC Max</label>
+          <input id="ecMax" type="text" />
+        </div>
+        <div class="field">
+          <label for="doMin">DO Min</label>
+          <input id="doMin" type="text" />
+        </div>
+        <div class="field">
+          <label for="ammoniumHigh">NH4 High</label>
+          <input id="ammoniumHigh" type="text" />
+        </div>
+        <div class="field">
+          <label for="nitrateHigh">NO3 High</label>
+          <input id="nitrateHigh" type="text" />
+        </div>
+        <div class="field">
+          <label for="vfaHigh">VFA High</label>
+          <input id="vfaHigh" type="text" />
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button class="primary-btn" id="saveSettingsBtn">Сохранить настройки</button>
+        <button class="secondary-btn" id="reloadBtn">Обновить данные</button>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
           <h2 class="section-title">Графики</h2>
-          <div class="section-subtitle">История данных: газовый блок, жидкая проба и интегральные показатели качества.</div>
+          <div class="section-subtitle">
+            История данных: газовый блок, жидкая проба и интегральные показатели качества.
+          </div>
         </div>
-        <div class="tag">HISTORY + TRENDS</div>
+        <div class="mini-badge">HISTORY + TRENDS</div>
       </div>
-      <div class="chart-box" style="margin-bottom:16px;">
-        <div class="chart-title">Газовый канал: CH4 / CO2 / H2S</div>
-        <canvas id="chartGas" height="110"></canvas>
-      </div>
-      <div class="chart-box" style="margin-bottom:16px;">
-        <div class="chart-title">Жидкая проба: pH / EC / DO</div>
-        <canvas id="chartLiquid" height="110"></canvas>
-      </div>
-      <div class="chart-box">
-        <div class="chart-title">Аналитика: BQI / Quality Score / Toxicity Risk</div>
-        <canvas id="chartQuality" height="110"></canvas>
+
+      <div class="chart-stack">
+        <div class="chart-card">
+          <div class="chart-title">Газовый канал: CH4 / CO2 / H2S</div>
+          <canvas id="gasChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Жидкая проба: pH / EC / DO</div>
+          <canvas id="liquidChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Аналитика: BQI / Quality Score / Toxicity Risk</div>
+          <canvas id="qualityChart"></canvas>
+        </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
+    <section class="panel">
+      <div class="panel-header">
         <div>
           <h2 class="section-title">Журнал событий</h2>
-          <div class="section-subtitle">Тревоги, автоматические реакции, запуск системы, обновление рекомендаций и изменения состояния исполнительных механизмов.</div>
+          <div class="section-subtitle">
+            Тревоги, автоматические реакции, запуск системы, обновление рекомендаций и изменения состояния исполнительных механизмов.
+          </div>
         </div>
-        <div class="tag">EVENT STREAM</div>
+        <div class="mini-badge">EVENT STREAM</div>
       </div>
-      <div id="events" class="events"></div>
+
+      <div class="event-list" id="eventList">
+        <div class="empty">Событий пока нет</div>
+      </div>
     </section>
 
-    <div class="footer">Stage 2 dashboard for liquid sample biosensor slide • Firebase RTDB • ESP32 Lab-on-Chip node</div>
-  </div>
+    <div class="footer-note">
+      Stage 2 dashboard for liquid sample biosensor slide • Firebase RTDB • ESP32 Lab-on-Chip node
+    </div>
+  </main>
+
+  <div class="toast-wrap" id="toastWrap"></div>
 
   <script>
-    const DB = 'https://erekearduino-default-rtdb.firebaseio.com';
-    const DEVICE = 'esp32-labchip-01';
+    const FIREBASE_DB_URL = "https://erekearduino-default-rtdb.firebaseio.com";
+    const DEVICE_ID = "esp32-labchip-01";
 
-    const el = id => document.getElementById(id);
-    const n = (v, d = 2) => (typeof v === 'number' && !Number.isNaN(v)) ? v.toFixed(d) : '--';
-    const txt = (id, value) => { el(id).textContent = value ?? '--'; };
+    const defaultSettings = {
+      gasTempMin: 35,
+      gasTempMax: 39,
+      ch4Low: 50,
+      h2sHigh: 250,
+      o2High: 1.2,
+      phMin: 6.8,
+      phMax: 7.8,
+      ecMax: 4.5,
+      doMin: 0.8,
+      ammoniumHigh: 180,
+      nitrateHigh: 140,
+      vfaHigh: 3
+    };
 
-    function bandClass(v, warn = 45, crit = 75) {
-      if (v === null || v === undefined || Number.isNaN(v)) return 'card';
-      if (v >= crit) return 'card danger';
-      if (v >= warn) return 'card warn';
-      return 'card good';
+    let currentData = null;
+    let currentControl = null;
+    let currentSettings = { ...defaultSettings };
+    let historyData = [];
+    let eventsData = [];
+    let charts = {};
+    let lastCurrentFetchAt = 0;
+
+    const numericFields = {
+      ch4: 2,
+      co2: 2,
+      h2sPpm: 2,
+      o2: 2,
+      gasTemperature: 2,
+      humidity: 2,
+      pressure: 2,
+      ph: 2,
+      orp: 2,
+      ec: 2,
+      dissolvedOxygen: 2,
+      liquidTemperature: 2,
+      ammonium: 2,
+      nitrate: 2,
+      vfa: 2,
+      nirOrganicIndex: 2,
+      biomassQualityIndex: 2,
+      spectralScore: 2,
+      opticalDensity: 2,
+      colorIndex: 2,
+      turbidityIndex: 2,
+      maturityIndex: 2,
+      fertilizerSuitabilityIndex: 2,
+      toxicityRisk: 2,
+      imbalanceRisk: 2,
+      sampleQualityScore: 2
+    };
+
+    function dbUrl(path){
+      return `${FIREBASE_DB_URL}${path}.json`;
     }
 
-    function lowRiskClass(v, warn = 65, crit = 40) {
-      if (v === null || v === undefined || Number.isNaN(v)) return 'card';
-      if (v < crit) return 'card danger';
-      if (v < warn) return 'card warn';
-      return 'card good';
-    }
-
-    function boolText(v, onText = 'ON', offText = 'OFF') {
-      return v ? onText : offText;
-    }
-
-    function setCard(id, valueClass) { el(id).className = valueClass; }
-
-    const gasChart = new Chart(el('chartGas'), {
-      type: 'line',
-      data: { labels: [], datasets: [
-        { label: 'CH4', data: [], borderColor: '#54b7ff', backgroundColor: 'transparent', tension: .35 },
-        { label: 'CO2', data: [], borderColor: '#ff6aa6', backgroundColor: 'transparent', tension: .35 },
-        { label: 'H2S ppm', data: [], borderColor: '#f6b343', backgroundColor: 'transparent', tension: .35 }
-      ]},
-      options: { responsive: true, plugins: { legend: { labels: { color: '#dbe8ff' } } }, scales: { x: { ticks: { color: '#b4c8ea' }, grid: { color: 'rgba(255,255,255,.06)' } }, y: { ticks: { color: '#b4c8ea' }, grid: { color: 'rgba(255,255,255,.06)' } } } }
-    });
-
-    const liquidChart = new Chart(el('chartLiquid'), {
-      type: 'line',
-      data: { labels: [], datasets: [
-        { label: 'pH', data: [], borderColor: '#54b7ff', backgroundColor: 'transparent', tension: .35 },
-        { label: 'EC', data: [], borderColor: '#ff6aa6', backgroundColor: 'transparent', tension: .35 },
-        { label: 'DO', data: [], borderColor: '#f6b343', backgroundColor: 'transparent', tension: .35 }
-      ]},
-      options: { responsive: true, plugins: { legend: { labels: { color: '#dbe8ff' } } }, scales: { x: { ticks: { color: '#b4c8ea' }, grid: { color: 'rgba(255,255,255,.06)' } }, y: { ticks: { color: '#b4c8ea' }, grid: { color: 'rgba(255,255,255,.06)' } } } }
-    });
-
-    const qualityChart = new Chart(el('chartQuality'), {
-      type: 'line',
-      data: { labels: [], datasets: [
-        { label: 'BQI', data: [], borderColor: '#42e38a', backgroundColor: 'transparent', tension: .35 },
-        { label: 'Quality Score', data: [], borderColor: '#6ea8ff', backgroundColor: 'transparent', tension: .35 },
-        { label: 'Toxicity Risk', data: [], borderColor: '#ff7c7e', backgroundColor: 'transparent', tension: .35 }
-      ]},
-      options: { responsive: true, plugins: { legend: { labels: { color: '#dbe8ff' } } }, scales: { x: { ticks: { color: '#b4c8ea' }, grid: { color: 'rgba(255,255,255,.06)' } }, y: { ticks: { color: '#b4c8ea' }, grid: { color: 'rgba(255,255,255,.06)' }, suggestedMin: 0, suggestedMax: 100 } } }
-    });
-
-    async function getJson(path) {
-      const res = await fetch(`${DB}${path}.json?ts=${Date.now()}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    async function fetchJson(path){
+      const res = await fetch(dbUrl(path), { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       return res.json();
     }
 
-    function renderCurrent(d) {
-      if (!d) return;
-
-      txt('mode', d.mode ?? '--');
-      txt('wifi', d.wifi ? 'Connected' : 'Offline');
-      txt('firebase', d.firebase ? 'Connected' : 'Offline');
-      txt('firmware', d.firmwareVersion ?? '--');
-      txt('deviceId', d.deviceId ?? '--');
-      txt('uptimeSec', d.uptimeSec ?? '--');
-
-      txt('ch4', n(d.ch4));
-      txt('co2', n(d.co2));
-      txt('h2sPpm', n(d.h2sPpm));
-      txt('o2', n(d.o2));
-      txt('gasTemperature', n(d.gasTemperature));
-      txt('humidity', n(d.humidity));
-      txt('pressure', n(d.pressure));
-
-      txt('ph', n(d.ph));
-      txt('orp', n(d.orp, 0));
-      txt('ec', n(d.ec));
-      txt('dissolvedOxygen', n(d.dissolvedOxygen));
-      txt('liquidTemperature', n(d.liquidTemperature));
-      txt('ammonium', n(d.ammonium));
-      txt('nitrate', n(d.nitrate));
-      txt('vfa', n(d.vfa));
-
-      txt('nirOrganicIndex', n(d.nirOrganicIndex));
-      txt('biomassQualityIndex', n(d.biomassQualityIndex));
-      txt('spectralScore', n(d.spectralScore));
-      txt('opticalDensity', n(d.opticalDensity));
-      txt('colorIndex', n(d.colorIndex));
-      txt('turbidityIndex', n(d.turbidityIndex));
-
-      txt('maturityIndex', n(d.maturityIndex));
-      txt('fertilizerSuitabilityIndex', n(d.fertilizerSuitabilityIndex));
-      txt('sampleQualityScore', n(d.sampleQualityScore));
-      txt('toxicityRisk', n(d.toxicityRisk));
-      txt('imbalanceRisk', n(d.imbalanceRisk));
-      txt('qualityBand', d.qualityBand ?? '--');
-      txt('recommendation', d.recommendation ?? 'Ожидание данных...');
-      txt('qualityBandTop', `QUALITY BAND: ${d.qualityBand ?? '--'}`);
-      txt('systemBand', d.qualityBand ? `${d.qualityBand}` : 'LIVE DATA');
-
-      txt('heaterState', boolText(d.heater, 'ON', 'OFF'));
-      txt('ventilationState', boolText(d.ventilation, 'ON', 'OFF'));
-      txt('pumpState', boolText(d.pump, 'ON', 'OFF'));
-      txt('mixerState', boolText(d.mixer, 'ON', 'OFF'));
-      txt('valveState', boolText(d.valve, 'OPEN', 'CLOSE'));
-
-      el('liveStatus').innerHTML = '<span class="status-dot"></span><span>LIVE DATA STREAM ACTIVE</span>';
-
-      setCard('card-wifi', d.wifi ? 'card good' : 'card danger');
-      setCard('card-fb', d.firebase ? 'card good' : 'card danger');
-      setCard('card-mode', d.mode === 'AUTO' ? 'card good' : 'card warn');
-      setCard('card-heater', d.heater ? 'card good' : 'card');
-      setCard('card-venti', d.ventilation ? 'card warn' : 'card');
-      setCard('card-pump', d.pump ? 'card good' : 'card');
-      setCard('card-mixer', d.mixer ? 'card good' : 'card');
-      setCard('card-valve', d.valve ? 'card good' : 'card warn');
-
-      setCard('card-ch4', d.ch4 < 50 ? 'card danger' : 'card good');
-      setCard('card-co2', bandClass(d.co2, 35, 45));
-      setCard('card-h2s', bandClass(d.h2sPpm, 120, 250));
-      setCard('card-o2', bandClass(d.o2, 1.2, 2.5));
-      setCard('card-gtemp', (d.gasTemperature >= 35 && d.gasTemperature <= 39) ? 'card good' : 'card warn');
-      setCard('card-hum', 'card');
-      setCard('card-press', 'card');
-
-      setCard('card-ph', (d.ph >= 6.8 && d.ph <= 7.8) ? 'card good' : 'card warn');
-      setCard('card-orp', 'card');
-      setCard('card-ec', bandClass(d.ec, 4.5, 6.0));
-      setCard('card-do', lowRiskClass(d.dissolvedOxygen, 1.0, 0.8));
-      setCard('card-ltemp', 'card');
-      setCard('card-nh4', bandClass(d.ammonium, 180, 220));
-      setCard('card-no3', bandClass(d.nitrate, 140, 180));
-      setCard('card-vfa', bandClass(d.vfa, 3.0, 4.0));
-
-      setCard('card-nir', 'card good');
-      setCard('card-bqi', bandClass(100 - d.biomassQualityIndex, 45, 65) === 'card danger' ? 'card warn' : 'card good');
-      setCard('card-spec', 'card good');
-      setCard('card-od', 'card warn');
-      setCard('card-color', 'card warn');
-      setCard('card-turb', 'card warn');
-
-      setCard('card-maturity', lowRiskClass(d.maturityIndex));
-      setCard('card-fertilizer', lowRiskClass(d.fertilizerSuitabilityIndex));
-      setCard('card-quality', lowRiskClass(d.sampleQualityScore));
-      setCard('card-toxic', bandClass(d.toxicityRisk));
-      setCard('card-imbalance', bandClass(d.imbalanceRisk));
-      setCard('card-band', d.qualityBand === 'CRITICAL' ? 'card danger' : d.qualityBand === 'WARNING' ? 'card warn' : 'card good');
+    async function putJson(path, payload){
+      const res = await fetch(dbUrl(path), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`PUT ${res.status}`);
+      return res.json().catch(() => ({}));
     }
 
-    function renderSettings(s) {
-      if (!s) return;
-      ['gasTempMin','gasTempMax','ch4Low','h2sHigh','o2High','phMin','phMax','ecMax','doMin','ammoniumHigh','nitrateHigh','vfaHigh'].forEach(k => txt(k, s[k] ?? '--'));
+    function showToast(message, type="success"){
+      const wrap = document.getElementById("toastWrap");
+      const div = document.createElement("div");
+      div.className = `toast ${type}`;
+      div.textContent = message;
+      wrap.appendChild(div);
+      setTimeout(() => div.remove(), 3400);
     }
 
-    function applySeries(chart, labels, series) {
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = series[0];
-      chart.data.datasets[1].data = series[1];
-      chart.data.datasets[2].data = series[2];
-      chart.update();
+    function safeNumber(v){
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
     }
 
-    function renderHistory(h) {
-      if (!h) return;
-      const arr = Object.values(h).sort((a,b) => Number(a.timestamp || 0) - Number(b.timestamp || 0)).slice(-12);
-      const labels = arr.map(x => x.timestamp || '--');
-      applySeries(gasChart, labels, [arr.map(x => x.ch4 ?? null), arr.map(x => x.co2 ?? null), arr.map(x => x.h2sPpm ?? null)]);
-      applySeries(liquidChart, labels, [arr.map(x => x.ph ?? null), arr.map(x => x.ec ?? null), arr.map(x => x.dissolvedOxygen ?? null)]);
-      applySeries(qualityChart, labels, [arr.map(x => x.biomassQualityIndex ?? null), arr.map(x => x.sampleQualityScore ?? null), arr.map(x => x.toxicityRisk ?? null)]);
+    function formatValue(field, value){
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return "--";
+      if (field === "qualityBand") return String(value);
+      if (field === "state-uptime") return `${Math.round(Number(value))} sec`;
+      const decimals = numericFields[field] ?? 0;
+      return Number(value).toFixed(decimals);
     }
 
-    function renderEvents(eventsObj) {
-      const wrap = el('events');
-      wrap.innerHTML = '';
-      if (!eventsObj) {
-        wrap.innerHTML = '<div class="event info"><div class="event-title">Нет событий</div><div class="event-meta">Firebase events is empty</div></div>';
+    function setText(id, value){
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function metricStatus(field, value){
+      if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return "warn";
+      }
+
+      const v = Number(value);
+      const s = currentSettings || defaultSettings;
+
+      switch (field) {
+        case "ch4":
+          if (v < s.ch4Low) return "danger";
+          if (v < s.ch4Low + 6) return "warn";
+          return "normal";
+
+        case "co2":
+          if (v > 42) return "danger";
+          if (v > 36) return "warn";
+          return "normal";
+
+        case "h2sPpm":
+          if (v > s.h2sHigh) return "danger";
+          if (v > s.h2sHigh * 0.82) return "warn";
+          return "normal";
+
+        case "o2":
+          if (v > s.o2High) return "danger";
+          if (v > s.o2High * 0.72) return "warn";
+          return "normal";
+
+        case "gasTemperature":
+          if (v < s.gasTempMin || v > s.gasTempMax) return "danger";
+          if (v < s.gasTempMin + 0.5 || v > s.gasTempMax - 0.5) return "warn";
+          return "normal";
+
+        case "humidity":
+          if (v > 80 || v < 20) return "warn";
+          return "normal";
+
+        case "pressure":
+          if (v > 1.16) return "danger";
+          if (v > 1.08) return "warn";
+          return "normal";
+
+        case "ph":
+          if (v < s.phMin || v > s.phMax) return "danger";
+          if (v < s.phMin + 0.15 || v > s.phMax - 0.15) return "warn";
+          return "normal";
+
+        case "orp":
+          if (v < -250 || v > 60) return "warn";
+          return "normal";
+
+        case "ec":
+          if (v > s.ecMax) return "danger";
+          if (v > s.ecMax * 0.84) return "warn";
+          return "normal";
+
+        case "dissolvedOxygen":
+          if (v < s.doMin) return "danger";
+          if (v < s.doMin + 0.3) return "warn";
+          return "normal";
+
+        case "liquidTemperature":
+          if (v < 28 || v > 40) return "warn";
+          return "normal";
+
+        case "ammonium":
+          if (v > s.ammoniumHigh) return "danger";
+          if (v > s.ammoniumHigh * 0.8) return "warn";
+          return "normal";
+
+        case "nitrate":
+          if (v > s.nitrateHigh) return "danger";
+          if (v > s.nitrateHigh * 0.8) return "warn";
+          return "normal";
+
+        case "vfa":
+          if (v > s.vfaHigh) return "danger";
+          if (v > s.vfaHigh * 0.74) return "warn";
+          return "normal";
+
+        case "nirOrganicIndex":
+        case "spectralScore":
+          if (v < 40) return "danger";
+          if (v < 60) return "warn";
+          return "normal";
+
+        case "biomassQualityIndex":
+          if (v < 50) return "danger";
+          if (v < 65) return "warn";
+          return "normal";
+
+        case "opticalDensity":
+          if (v > 1.9) return "warn";
+          return "normal";
+
+        case "colorIndex":
+          if (v > 85) return "warn";
+          return "normal";
+
+        case "turbidityIndex":
+          if (v > 75) return "danger";
+          if (v > 55) return "warn";
+          return "normal";
+
+        case "maturityIndex":
+        case "fertilizerSuitabilityIndex":
+        case "sampleQualityScore":
+          if (v < 45) return "danger";
+          if (v < 65) return "warn";
+          return "normal";
+
+        case "toxicityRisk":
+        case "imbalanceRisk":
+          if (v > 70) return "danger";
+          if (v > 45) return "warn";
+          return "normal";
+
+        default:
+          return "normal";
+      }
+    }
+
+    function statusText(status){
+      if (status === "danger") return "DANGER";
+      if (status === "warn") return "WARNING";
+      return "NORMAL";
+    }
+
+    function applyMetricVisual(field, value){
+      const card = document.getElementById(`card-${field}`);
+      const state = document.getElementById(`state-${field}`);
+      if (!card || !state) return;
+
+      const status = metricStatus(field, value);
+      card.classList.remove("status-normal", "status-warn", "status-danger");
+      state.classList.remove("normal", "warn", "danger");
+
+      if (status === "danger"){
+        card.classList.add("status-danger");
+        state.classList.add("danger");
+      } else if (status === "warn"){
+        card.classList.add("status-warn");
+        state.classList.add("warn");
+      } else {
+        card.classList.add("status-normal");
+        state.classList.add("normal");
+      }
+
+      state.textContent = statusText(status);
+    }
+
+    function updateMetric(field, value){
+      setText(`value-${field}`, formatValue(field, value));
+      applyMetricVisual(field, value);
+    }
+
+    function qualityBandVisual(band){
+      const card = document.getElementById("card-qualityBand");
+      const state = document.getElementById("state-qualityBand");
+      const badge = document.getElementById("qualityBandBadge");
+      if (!card || !state || !badge) return;
+
+      const normalized = String(band || "").toUpperCase();
+      card.classList.remove("status-normal", "status-warn", "status-danger");
+      state.classList.remove("normal", "warn", "danger");
+
+      if (normalized === "GOOD"){
+        card.classList.add("status-normal");
+        state.classList.add("normal");
+        state.textContent = "OPTIMAL";
+        badge.textContent = "QUALITY BAND: GOOD";
+      } else if (normalized === "ACCEPTABLE" || normalized === "WARNING"){
+        card.classList.add("status-warn");
+        state.classList.add("warn");
+        state.textContent = "MONITOR";
+        badge.textContent = `QUALITY BAND: ${normalized || "--"}`;
+      } else {
+        card.classList.add("status-danger");
+        state.classList.add("danger");
+        state.textContent = normalized ? "CRITICAL" : "--";
+        badge.textContent = `QUALITY BAND: ${normalized || "--"}`;
+      }
+    }
+
+    function deriveControlFromCurrent(){
+      return {
+        mode: currentData?.mode || "AUTO",
+        heater: Boolean(currentData?.heater),
+        ventilation: Boolean(currentData?.ventilation),
+        pump: Boolean(currentData?.pump),
+        mixer: Boolean(currentData?.mixer),
+        valve: Boolean(currentData?.valve)
+      };
+    }
+
+    function renderSystemState(data){
+      const online = !!data;
+      const freshSec = lastCurrentFetchAt ? Math.max(0, Math.round((Date.now() - lastCurrentFetchAt) / 1000)) : null;
+
+      setText("state-mode", online ? (currentControl?.mode || data.mode || "--") : "--");
+      setText("state-wifi", online && data.wifi ? "Connected" : "--");
+      setText("state-firebase", online ? "Connected" : "--");
+      setText("state-firmware", online ? (data.firmwareVersion || "--") : "--");
+      setText("state-deviceId", online ? (data.deviceId || DEVICE_ID) : "--");
+      setText("state-uptime", online ? `${Math.round(Number(data.uptimeSec || 0))} sec` : "--");
+
+      const hero = document.getElementById("heroStatusText");
+      const badge = document.getElementById("heroOnlineBadge");
+      const mini = document.getElementById("miniSystemBadge");
+
+      if (online){
+        hero.textContent = freshSec !== null
+          ? `Статус: подключено к Firebase • последнее обновление ${freshSec} сек назад`
+          : "Статус: подключено к Firebase";
+        badge.textContent = "ONLINE LAB-ON-CHIP STREAM";
+        mini.textContent = "DATA STREAM ACTIVE";
+      } else {
+        hero.textContent = "Статус: данных пока нет";
+        badge.textContent = "WAITING FOR DATA";
+        mini.textContent = "NO DATA YET";
+      }
+    }
+
+    function renderCurrent(data){
+      if (!data){
+        renderSystemState(null);
         return;
       }
-      const arr = Object.values(eventsObj).sort((a,b) => Number(b.ts || 0) - Number(a.ts || 0)).slice(0, 20);
-      arr.forEach(item => {
-        const level = (item.level || 'info').toLowerCase();
-        const cls = level === 'danger' ? 'danger' : level === 'warn' ? 'warn' : 'info';
-        const div = document.createElement('div');
-        div.className = `event ${cls}`;
-        div.innerHTML = `
-          <div class="event-title">${item.event || 'Event'}</div>
-          <div class="event-meta">level: ${item.level || '--'} | source: ${item.source || '--'} | ts: ${item.ts || '--'}</div>
-          <div>${item.details || '--'}</div>
+
+      renderSystemState(data);
+
+      [
+        "ch4","co2","h2sPpm","o2","gasTemperature","humidity","pressure",
+        "ph","orp","ec","dissolvedOxygen","liquidTemperature","ammonium","nitrate","vfa",
+        "nirOrganicIndex","biomassQualityIndex","spectralScore","opticalDensity","colorIndex","turbidityIndex",
+        "maturityIndex","fertilizerSuitabilityIndex","toxicityRisk","imbalanceRisk","sampleQualityScore"
+      ].forEach(field => updateMetric(field, safeNumber(data[field])));
+
+      setText("value-qualityBand", data.qualityBand || "--");
+      qualityBandVisual(data.qualityBand || "--");
+      setText("recommendationText", data.recommendation || "Ожидание данных...");
+
+      renderControlStates(currentControl || deriveControlFromCurrent());
+    }
+
+    function renderControlStates(control){
+      if (!control) control = deriveControlFromCurrent();
+
+      const modeBadge = document.getElementById("controlModeBadge");
+      modeBadge.textContent = `CONTROL MODE: ${control.mode || "AUTO"}`;
+
+      const btnAuto = document.getElementById("btnAuto");
+      const btnManual = document.getElementById("btnManual");
+      btnAuto.classList.toggle("active-outline", (control.mode || "AUTO") === "AUTO");
+      btnManual.classList.toggle("active-outline", (control.mode || "AUTO") === "MANUAL");
+
+      const entries = [
+        ["heater", control.heater, "ON", "OFF"],
+        ["ventilation", control.ventilation, "ON", "OFF"],
+        ["pump", control.pump, "ON", "OFF"],
+        ["mixer", control.mixer, "ON", "OFF"],
+        ["valve", control.valve, "OPEN", "CLOSED"]
+      ];
+
+      entries.forEach(([field, value, onText, offText]) => {
+        setText(`control-${field}`, value ? onText : offText);
+        const card = document.getElementById(`control-card-${field}`);
+        if (card){
+          card.classList.remove("on", "off");
+          card.classList.add(value ? "on" : "off");
+        }
+      });
+    }
+
+    function parseHistoryObject(obj){
+      if (!obj || typeof obj !== "object") return [];
+      return Object.values(obj)
+        .filter(Boolean)
+        .map(item => ({
+          ...item,
+          __ts: Number(item.timestamp || item.timestampMs || 0)
+        }))
+        .sort((a, b) => a.__ts - b.__ts);
+    }
+
+    function parseEventsObject(obj){
+      if (!obj || typeof obj !== "object") return [];
+      return Object.values(obj)
+        .filter(Boolean)
+        .map(item => ({
+          ...item,
+          __ts: Number(item.timestamp || 0)
+        }))
+        .sort((a, b) => b.__ts - a.__ts);
+    }
+
+    function shortTs(value){
+      const n = Number(value || 0);
+      if (!Number.isFinite(n)) return "--";
+      return String(n);
+    }
+
+    function renderEvents(list){
+      const root = document.getElementById("eventList");
+      if (!list || list.length === 0){
+        root.innerHTML = `<div class="empty">Событий пока нет</div>`;
+        return;
+      }
+
+      root.innerHTML = list.slice(0, 24).map(item => {
+        const level = (item.level || "info").toLowerCase();
+        const eventClass = level.includes("danger") ? "danger" : level.includes("warn") ? "warn" : "info";
+        const title = item.event || "Event";
+        const details = item.details || "";
+        const source = item.source || "ESP32";
+        const ts = shortTs(item.timestamp || item.__ts);
+        return `
+          <div class="event-card ${eventClass}">
+            <div class="event-title">${escapeHtml(title)}</div>
+            <div class="event-meta">level: ${escapeHtml(level)} | source: ${escapeHtml(source)} | ts: ${escapeHtml(ts)}</div>
+            <div class="event-details">${escapeHtml(details)}</div>
+          </div>
         `;
-        wrap.appendChild(div);
-      });
+      }).join("");
     }
 
-
-    async function putJson(path, data) {
-      const res = await fetch(`${DB}${path}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) throw new Error(`PUT ${path} -> HTTP ${res.status}`);
-      return res.json().catch(() => null);
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;");
     }
 
-    async function getControlState() {
-      return (await getJson(`/devices/${DEVICE}/control/current`)) || {
-        mode: 'AUTO',
-        heater: false,
-        ventilation: false,
-        pump: false,
-        mixer: false,
-        valve: false
-      };
-    }
-
-    async function updateControl(patch) {
-      const current = await getControlState();
-      const next = {
-        mode: patch.mode ?? current.mode ?? 'AUTO',
-        heater: patch.heater ?? current.heater ?? false,
-        ventilation: patch.ventilation ?? current.ventilation ?? false,
-        pump: patch.pump ?? current.pump ?? false,
-        mixer: patch.mixer ?? current.mixer ?? false,
-        valve: patch.valve ?? current.valve ?? false
-      };
-      await putJson(`/devices/${DEVICE}/control/current`, next);
-      await refresh();
-    }
-
-    function bindControls() {
-      const bind = (id, patch) => {
-        const node = el(id);
-        if (!node) return;
-        node.addEventListener('click', async () => {
-          try {
-            node.disabled = true;
-            await updateControl(patch);
-          } catch (e) {
-            console.error(e);
-            alert('Не удалось отправить команду в Firebase.');
-          } finally {
-            node.disabled = false;
+    function initCharts(){
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: "index" },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#cfe0ff",
+              boxWidth: 42,
+              font: { size: 13, weight: "700" }
+            }
           }
-        });
+        },
+        scales: {
+          x: {
+            grid: { color: "rgba(120,160,255,0.08)" },
+            ticks: { color: "#9fb2df", maxRotation: 0, autoSkip: true }
+          },
+          y: {
+            grid: { color: "rgba(120,160,255,0.08)" },
+            ticks: { color: "#9fb2df" }
+          }
+        }
       };
 
-      bind('btnAuto', { mode: 'AUTO' });
-      bind('btnManual', { mode: 'MANUAL' });
+      charts.gas = new Chart(document.getElementById("gasChart"), {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            { label: "CH4", data: [], borderColor: "#48b7ff", backgroundColor: "rgba(72,183,255,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+            { label: "CO2", data: [], borderColor: "#ff6694", backgroundColor: "rgba(255,102,148,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+            { label: "H2S ppm", data: [], borderColor: "#ffb347", backgroundColor: "rgba(255,179,71,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false }
+          ]
+        },
+        options: commonOptions
+      });
 
-      bind('btnHeaterOn', { mode: 'MANUAL', heater: true });
-      bind('btnHeaterOff', { mode: 'MANUAL', heater: false });
+      charts.liquid = new Chart(document.getElementById("liquidChart"), {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            { label: "pH", data: [], borderColor: "#4ec0ff", backgroundColor: "rgba(78,192,255,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+            { label: "EC", data: [], borderColor: "#ff6ea6", backgroundColor: "rgba(255,110,166,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+            { label: "DO", data: [], borderColor: "#ffb347", backgroundColor: "rgba(255,179,71,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false }
+          ]
+        },
+        options: commonOptions
+      });
 
-      bind('btnVentOn', { mode: 'MANUAL', ventilation: true });
-      bind('btnVentOff', { mode: 'MANUAL', ventilation: false });
-
-      bind('btnPumpOn', { mode: 'MANUAL', pump: true });
-      bind('btnPumpOff', { mode: 'MANUAL', pump: false });
-
-      bind('btnMixerOn', { mode: 'MANUAL', mixer: true });
-      bind('btnMixerOff', { mode: 'MANUAL', mixer: false });
-
-      bind('btnValveOpen', { mode: 'MANUAL', valve: true });
-      bind('btnValveClose', { mode: 'MANUAL', valve: false });
+      charts.quality = new Chart(document.getElementById("qualityChart"), {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            { label: "BQI", data: [], borderColor: "#49d97e", backgroundColor: "rgba(73,217,126,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+            { label: "Quality Score", data: [], borderColor: "#5da8ff", backgroundColor: "rgba(93,168,255,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+            { label: "Toxicity Risk", data: [], borderColor: "#ff7a7a", backgroundColor: "rgba(255,122,122,.18)", borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false }
+          ]
+        },
+        options: commonOptions
+      });
     }
 
-    async function refresh() {
-      try {
-        const [current, settings, history, events] = await Promise.all([
-          getJson(`/devices/${DEVICE}/current`),
-          getJson(`/devices/${DEVICE}/settings/current`),
-          getJson(`/devices/${DEVICE}/history`),
-          getJson(`/devices/${DEVICE}/events`)
-        ]);
-        renderCurrent(current);
-        renderSettings(settings);
-        renderHistory(history);
-        renderEvents(events);
-      } catch (e) {
-        console.error(e);
-        el('liveStatus').innerHTML = '<span class="status-dot" style="background:#ff7485;box-shadow:0 0 15px #ff7485"></span><span>DATA READ ERROR</span>';
+    function renderCharts(historyList){
+      const rows = (historyList && historyList.length ? historyList : (currentData ? [currentData] : [])).slice(-40);
+      const labels = rows.map(item => shortTs(item.timestamp || item.timestampMs || item.__ts || ""));
+
+      charts.gas.data.labels = labels;
+      charts.gas.data.datasets[0].data = rows.map(r => safeNumber(r.ch4));
+      charts.gas.data.datasets[1].data = rows.map(r => safeNumber(r.co2));
+      charts.gas.data.datasets[2].data = rows.map(r => safeNumber(r.h2sPpm));
+      charts.gas.update();
+
+      charts.liquid.data.labels = labels;
+      charts.liquid.data.datasets[0].data = rows.map(r => safeNumber(r.ph));
+      charts.liquid.data.datasets[1].data = rows.map(r => safeNumber(r.ec));
+      charts.liquid.data.datasets[2].data = rows.map(r => safeNumber(r.dissolvedOxygen));
+      charts.liquid.update();
+
+      charts.quality.data.labels = labels;
+      charts.quality.data.datasets[0].data = rows.map(r => safeNumber(r.biomassQualityIndex));
+      charts.quality.data.datasets[1].data = rows.map(r => safeNumber(r.sampleQualityScore ?? r.biomassQualityIndex));
+      charts.quality.data.datasets[2].data = rows.map(r => safeNumber(r.toxicityRisk ?? 0));
+      charts.quality.update();
+    }
+
+    function fillSettingsForm(settings){
+      Object.keys(defaultSettings).forEach(key => {
+        const input = document.getElementById(key);
+        if (input) input.value = settings[key] ?? defaultSettings[key];
+      });
+    }
+
+    function readSettingsForm(){
+      const payload = {};
+      Object.keys(defaultSettings).forEach(key => {
+        const el = document.getElementById(key);
+        const raw = (el?.value || "").replace(",", ".");
+        const num = Number(raw);
+        payload[key] = Number.isFinite(num) ? num : defaultSettings[key];
+      });
+      return payload;
+    }
+
+    async function saveSettings(){
+      try{
+        const payload = readSettingsForm();
+        await putJson(`/devices/${DEVICE_ID}/settings/current`, payload);
+        currentSettings = payload;
+        showToast("Настройки сохранены в Firebase", "success");
+      }catch(err){
+        console.error(err);
+        showToast("Не удалось сохранить настройки", "error");
       }
     }
 
-    bindControls();
-    refresh();
-    setInterval(refresh, 3000);
+    async function updateControl(partial){
+      try{
+        const base = currentControl || deriveControlFromCurrent();
+        const payload = { ...base, ...partial };
+        await putJson(`/devices/${DEVICE_ID}/control/current`, payload);
+        currentControl = payload;
+        renderControlStates(payload);
+        showToast(`Управление обновлено: ${payload.mode}`, "success");
+      }catch(err){
+        console.error(err);
+        showToast("Не удалось отправить команду управления", "error");
+      }
+    }
+
+    function bindControls(){
+      document.getElementById("btnAuto").addEventListener("click", () => updateControl({ mode: "AUTO" }));
+      document.getElementById("btnManual").addEventListener("click", () => updateControl({ mode: "MANUAL" }));
+
+      document.querySelectorAll("[data-control]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const field = btn.dataset.control;
+          const value = btn.dataset.value === "true";
+          const payload = { mode: "MANUAL" };
+          payload[field] = value;
+          updateControl(payload);
+        });
+      });
+
+      document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+      document.getElementById("reloadBtn").addEventListener("click", refreshAll);
+    }
+
+    async function refreshAll(){
+      const paths = [
+        fetchJson(`/devices/${DEVICE_ID}/current`),
+        fetchJson(`/devices/${DEVICE_ID}/control/current`),
+        fetchJson(`/devices/${DEVICE_ID}/settings/current`),
+        fetchJson(`/devices/${DEVICE_ID}/history`),
+        fetchJson(`/devices/${DEVICE_ID}/events`)
+      ];
+
+      const [currentRes, controlRes, settingsRes, historyRes, eventsRes] = await Promise.allSettled(paths);
+
+      if (currentRes.status === "fulfilled" && currentRes.value){
+        currentData = currentRes.value;
+        lastCurrentFetchAt = Date.now();
+      }
+
+      if (controlRes.status === "fulfilled" && controlRes.value){
+        currentControl = controlRes.value;
+      } else if (currentData) {
+        currentControl = deriveControlFromCurrent();
+      }
+
+      if (settingsRes.status === "fulfilled" && settingsRes.value){
+        currentSettings = { ...defaultSettings, ...settingsRes.value };
+      }
+
+      if (historyRes.status === "fulfilled"){
+        historyData = parseHistoryObject(historyRes.value);
+      }
+
+      if (eventsRes.status === "fulfilled"){
+        eventsData = parseEventsObject(eventsRes.value);
+      }
+
+      fillSettingsForm(currentSettings);
+      renderCurrent(currentData);
+      renderCharts(historyData);
+      renderEvents(eventsData);
+
+      if (!currentData){
+        renderSystemState(null);
+      }
+    }
+
+    function heartbeatWatcher(){
+      const fresh = lastCurrentFetchAt && (Date.now() - lastCurrentFetchAt < 8000);
+      const badge = document.getElementById("heroOnlineBadge");
+      if (!badge) return;
+      badge.textContent = fresh ? "ONLINE LAB-ON-CHIP STREAM" : "WAITING FOR LIVE DATA";
+    }
+
+    window.addEventListener("load", async () => {
+      initCharts();
+      bindControls();
+      fillSettingsForm(defaultSettings);
+
+      try{
+        await refreshAll();
+      }catch(err){
+        console.error(err);
+        showToast("Не удалось загрузить стартовые данные", "warn");
+      }
+
+      setInterval(() => {
+        refreshAll().catch(err => {
+          console.error(err);
+        });
+      }, 2500);
+
+      setInterval(heartbeatWatcher, 1000);
+    });
   </script>
 </body>
 </html>
