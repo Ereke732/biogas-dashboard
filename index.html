@@ -16,13 +16,13 @@
 // ======================================================
 // WIFI + FIREBASE
 // ======================================================
-const char* WIFI_SSID     = "Wokwi-GUEST";
-const char* WIFI_PASSWORD = "";
+const char* WIFI_SSID      = "Wokwi-GUEST";
+const char* WIFI_PASSWORD  = "";
 
-const char* FIREBASE_DB_URL = "https://erekearduino-default-rtdb.firebaseio.com";
-const char* FIREBASE_AUTH   = "";
-const char* DEVICE_ID       = "esp32-labchip-01";
-const char* FIRMWARE_VERSION = "2.3-labchip-stage2";
+const char* FIREBASE_DB_URL   = "https://erekearduino-default-rtdb.firebaseio.com";
+const char* FIREBASE_AUTH     = "";
+const char* DEVICE_ID         = "esp32-labchip-01";
+const char* FIRMWARE_VERSION  = "2.4-labchip-clean";
 
 // ======================================================
 // DISPLAY
@@ -30,6 +30,7 @@ const char* FIRMWARE_VERSION = "2.3-labchip-stage2";
 #define TFT_CS 15
 #define TFT_DC 2
 Adafruit_ILI9341 tft(TFT_CS, TFT_DC);
+const uint16_t COLOR_ORANGE = 0xFD20;
 
 // ======================================================
 // INPUTS
@@ -40,8 +41,8 @@ Adafruit_ILI9341 tft(TFT_CS, TFT_DC);
 #define PIN_CO2   35
 #define PIN_H2S   32
 #define PIN_O2    33
-#define PIN_LIQ   36   // VP
-#define PIN_OPT   39   // VN
+#define PIN_LIQ   36
+#define PIN_OPT   39
 
 #define PIN_MANUAL_BUTTON 4
 DHTesp dhtGas;
@@ -74,18 +75,18 @@ struct Settings {
 };
 
 Settings cfg = {
-  35.0f,   // gasTempMin
-  39.0f,   // gasTempMax
-  50.0f,   // ch4Low
-  250.0f,  // h2sHigh
-  1.20f,   // o2High
-  6.80f,   // phMin
-  7.80f,   // phMax
-  4.50f,   // ecMax
-  0.80f,   // doMin
-  180.0f,  // ammoniumHigh
-  140.0f,  // nitrateHigh
-  3.00f    // vfaHigh
+  35.0f,
+  39.0f,
+  50.0f,
+  250.0f,
+  1.20f,
+  6.80f,
+  7.80f,
+  4.50f,
+  0.80f,
+  180.0f,
+  140.0f,
+  3.00f
 };
 
 // ======================================================
@@ -105,7 +106,6 @@ String systemMode = "AUTO";
 struct Measurement {
   unsigned long timestampMs;
 
-  // Current dashboard-compatible fields
   float ch4;
   float co2;
   float h2sPpm;
@@ -126,17 +126,15 @@ struct Measurement {
   float nirOrganicIndex;
   float biomassQualityIndex;
   float spectralScore;
-
-  // Stage 2 analytical fields
+  float opticalDensity;
   float colorIndex;
   float turbidityIndex;
-  float opticalDensity;
 
   float maturityIndex;
   float fertilizerSuitabilityIndex;
+  float sampleQualityScore;
   float toxicityRisk;
   float imbalanceRisk;
-  float sampleQualityScore;
 
   String qualityBand;
   String recommendation;
@@ -157,15 +155,15 @@ unsigned long lastWiFiRetry     = 0;
 unsigned long lastScreenDraw    = 0;
 unsigned long lastButtonCheck   = 0;
 
-const unsigned long READ_INTERVAL          = 1000;
-const unsigned long PUSH_CURRENT_INTERVAL  = 2000;
-const unsigned long PUSH_HISTORY_INTERVAL  = 5000;
-const unsigned long PUSH_HEARTBEAT_INT     = 3000;
-const unsigned long POLL_CONTROL_INTERVAL  = 2000;
-const unsigned long POLL_SETTINGS_INTERVAL = 2500;
-const unsigned long WIFI_RETRY_INTERVAL    = 5000;
-const unsigned long SCREEN_INTERVAL        = 1800;
-const unsigned long BUTTON_INTERVAL        = 120;
+const unsigned long READ_INTERVAL          = 1000UL;
+const unsigned long PUSH_CURRENT_INTERVAL  = 2000UL;
+const unsigned long PUSH_HISTORY_INTERVAL  = 5000UL;
+const unsigned long PUSH_HEARTBEAT_INT     = 4000UL;
+const unsigned long POLL_CONTROL_INTERVAL  = 2500UL;
+const unsigned long POLL_SETTINGS_INTERVAL = 4000UL;
+const unsigned long WIFI_RETRY_INTERVAL    = 5000UL;
+const unsigned long SCREEN_INTERVAL        = 1800UL;
+const unsigned long BUTTON_INTERVAL        = 120UL;
 
 // ======================================================
 // SCREEN PAGES
@@ -184,14 +182,14 @@ ScreenPage currentPage = PAGE_OVERVIEW;
 // ======================================================
 // EVENT LATCHES
 // ======================================================
-bool h2sAlarmSent      = false;
-bool ch4AlarmSent      = false;
-bool o2AlarmSent       = false;
-bool phAlarmSent       = false;
-bool ammoniumAlarmSent = false;
-bool nitrateAlarmSent  = false;
-bool vfaAlarmSent      = false;
-bool toxicityAlarmSent = false;
+bool h2sAlarmSent       = false;
+bool ch4AlarmSent       = false;
+bool o2AlarmSent        = false;
+bool phAlarmSent        = false;
+bool ammoniumAlarmSent  = false;
+bool nitrateAlarmSent   = false;
+bool vfaAlarmSent       = false;
+bool toxicityAlarmSent  = false;
 bool imbalanceAlarmSent = false;
 String lastRecommendation = "";
 
@@ -204,7 +202,6 @@ float smoothValue(float prev, float next, float alpha);
 float adcNorm(int adc);
 float curveMap(int adc, float outMin, float outMax, float gamma);
 float curveMapInv(int adc, float outMin, float outMax, float gamma);
-
 String jsonEscape(String value);
 
 String firebaseUrl(const String& path);
@@ -323,10 +320,11 @@ bool firebasePut(const String& path, const String& json) {
 
   HTTPClient https;
   if (!https.begin(client, firebaseUrl(path))) return false;
-
   https.addHeader("Content-Type", "application/json");
+
   int code = https.PUT(json);
-  https.getString();
+  String dummy = https.getString();
+  (void)dummy;
   https.end();
 
   return code >= 200 && code < 300;
@@ -340,10 +338,11 @@ bool firebasePost(const String& path, const String& json) {
 
   HTTPClient https;
   if (!https.begin(client, firebaseUrl(path))) return false;
-
   https.addHeader("Content-Type", "application/json");
+
   int code = https.POST(json);
-  https.getString();
+  String dummy = https.getString();
+  (void)dummy;
   https.end();
 
   return code >= 200 && code < 300;
@@ -370,12 +369,14 @@ String firebaseGet(const String& path) {
 // SIMPLE JSON PARSERS
 // ======================================================
 float extractJsonNumber(const String& json, const String& key, float fallbackValue) {
-  String marker = "\"" + key + "\":";
+  String marker = String("\"") + key + "\":";
   int start = json.indexOf(marker);
   if (start < 0) return fallbackValue;
 
   start += marker.length();
-  while (start < json.length() && (json[start] == ' ' || json[start] == '\"')) start++;
+  while (start < json.length() && (json[start] == ' ' || json[start] == '"')) {
+    start++;
+  }
 
   int end = start;
   while (end < json.length()) {
@@ -390,29 +391,24 @@ float extractJsonNumber(const String& json, const String& key, float fallbackVal
   String value = json.substring(start, end);
   value.trim();
   if (value.length() == 0) return fallbackValue;
-
   return value.toFloat();
 }
 
 bool extractJsonBool(const String& json, const String& key, bool fallbackValue) {
-  String trueMarker  = "\"" + key + "\":true";
-  String falseMarker = "\"" + key + "\":false";
-
+  String trueMarker = String("\"") + key + "\":true";
+  String falseMarker = String("\"") + key + "\":false";
   if (json.indexOf(trueMarker) >= 0) return true;
   if (json.indexOf(falseMarker) >= 0) return false;
-
   return fallbackValue;
 }
 
 String extractJsonString(const String& json, const String& key, const String& fallbackValue) {
-  String marker = "\"" + key + "\":\"";
+  String marker = String("\"") + key + "\":\"";
   int start = json.indexOf(marker);
   if (start < 0) return fallbackValue;
-
   start += marker.length();
   int end = json.indexOf("\"", start);
   if (end < 0) return fallbackValue;
-
   return json.substring(start, end);
 }
 
@@ -425,9 +421,9 @@ void connectWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-    delay(300);
+  unsigned long started = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - started < 15000UL) {
+    delay(250);
   }
 }
 
@@ -440,7 +436,7 @@ void applyOutputs() {
 }
 
 // ======================================================
-// SENSOR READ - STAGE 2
+// SENSOR READERS
 // ======================================================
 void readGasModule(Measurement& m) {
   TempAndHumidity th = dhtGas.getTempAndHumidity();
@@ -450,291 +446,277 @@ void readGasModule(Measurement& m) {
   int rawH2S = analogRead(PIN_H2S);
   int rawO2  = analogRead(PIN_O2);
 
-  float xCH4 = adcNorm(rawCH4);
-  float xCO2 = adcNorm(rawCO2);
-  float xH2S = adcNorm(rawH2S);
-  float xO2  = adcNorm(rawO2);
-
   float t = millis() / 1000.0f;
 
-  float ch4Target = curveMap(rawCH4, 40.0f, 82.0f, 0.75f) + sinf(t * 0.29f) * 0.8f;
-
-  float co2Base = curveMap(rawCO2, 18.0f, 48.0f, 1.15f) + cosf(t * 0.23f) * 0.4f;
-  float co2Target = co2Base - (ch4Target - 55.0f) * 0.22f;
-  co2Target = clampf(co2Target, 15.0f, 50.0f);
-
-  float h2sTarget = curveMap(rawH2S, 20.0f, 900.0f, 1.85f) + sinf(t * 0.41f) * 18.0f;
-  h2sTarget = clampf(h2sTarget, 10.0f, 950.0f);
-
-  float o2Target = curveMapInv(rawO2, 0.05f, 3.50f, 1.60f) + cosf(t * 0.33f) * 0.03f;
-  o2Target = clampf(o2Target, 0.03f, 3.80f);
+  float ch4Target = clampf(curveMap(rawCH4, 45.0f, 80.0f, 0.85f) + sinf(t * 0.19f) * 2.0f, 35.0f, 85.0f);
+  float co2Target = clampf(curveMap(rawCO2, 20.0f, 42.0f, 1.10f) + cosf(t * 0.17f) * 1.5f, 10.0f, 50.0f);
+  float h2sTarget = clampf(curveMap(rawH2S, 15.0f, 420.0f, 1.55f) + sinf(t * 0.23f) * 8.0f, 5.0f, 950.0f);
+  float o2Target  = clampf(curveMapInv(rawO2, 0.05f, 3.20f, 1.60f) + cosf(t * 0.21f) * 0.05f, 0.03f, 4.50f);
 
   float gasTempTarget = isnan(th.temperature)
-    ? (34.0f + xCH4 * 5.0f + xH2S * 2.0f + sinf(t * 0.20f) * 0.6f)
-    : th.temperature;
+      ? clampf(35.5f + adcNorm(rawCH4) * 2.0f + sinf(t * 0.15f) * 0.6f, 30.0f, 45.0f)
+      : th.temperature;
 
   float humidityTarget = isnan(th.humidity)
-    ? (42.0f + xO2 * 18.0f + xH2S * 8.0f + cosf(t * 0.24f) * 2.5f)
-    : th.humidity;
+      ? clampf(45.0f + adcNorm(rawO2) * 15.0f + cosf(t * 0.11f) * 4.0f, 20.0f, 90.0f)
+      : th.humidity;
 
-  float pressureTarget = 0.94f + xO2 * 0.16f + xH2S * 0.07f + xCH4 * 0.03f + sinf(t * 0.17f) * 0.01f;
-  pressureTarget = clampf(pressureTarget, 0.92f, 1.24f);
+  float pressureTarget = clampf(0.96f + adcNorm(rawO2) * 0.10f + adcNorm(rawH2S) * 0.06f + sinf(t * 0.09f) * 0.01f, 0.90f, 1.25f);
 
   m.ch4            = smoothValue(latest.ch4, ch4Target, 0.35f);
   m.co2            = smoothValue(latest.co2, co2Target, 0.30f);
-  m.h2sPpm         = smoothValue(latest.h2sPpm, h2sTarget, 0.42f);
+  m.h2sPpm         = smoothValue(latest.h2sPpm, h2sTarget, 0.35f);
   m.o2             = smoothValue(latest.o2, o2Target, 0.35f);
-  m.gasTemperature = smoothValue(latest.gasTemperature, gasTempTarget, 0.25f);
+  m.gasTemperature = smoothValue(latest.gasTemperature, gasTempTarget, 0.30f);
   m.humidity       = smoothValue(latest.humidity, humidityTarget, 0.25f);
-  m.pressure       = smoothValue(latest.pressure, pressureTarget, 0.30f);
+  m.pressure       = smoothValue(latest.pressure, pressureTarget, 0.25f);
 }
 
 void readLiquidModule(Measurement& m) {
-  int rawLIQ = analogRead(PIN_LIQ);
-  float xLIQ = adcNorm(rawLIQ);
+  int rawLiq = analogRead(PIN_LIQ);
+  float x = adcNorm(rawLiq);
   float t = millis() / 1000.0f;
 
-  float phTarget  = curveMap(rawLIQ, 6.10f, 8.60f, 0.85f) + sinf(t * 0.22f) * 0.04f;
-  float orpTarget = curveMap(rawLIQ, -320.0f, 80.0f, 1.10f) + cosf(t * 0.18f) * 6.0f;
-  float ecTarget  = curveMap(rawLIQ, 0.80f, 7.20f, 0.90f) + sinf(t * 0.25f) * 0.10f;
-  float doTarget  = curveMapInv(rawLIQ, 0.10f, 3.20f, 1.40f) + cosf(t * 0.21f) * 0.04f;
-  float ltTarget  = 28.0f + xLIQ * 10.0f + adcNorm(analogRead(PIN_CH4)) * 2.5f + sinf(t * 0.19f) * 0.4f;
+  float phTarget   = clampf(6.7f + x * 1.1f + sinf(t * 0.13f) * 0.08f, 5.8f, 8.8f);
+  float orpTarget  = clampf(-180.0f + x * 190.0f + cosf(t * 0.16f) * 8.0f, -260.0f, 60.0f);
+  float ecTarget   = clampf(2.6f + x * 2.2f + sinf(t * 0.11f) * 0.10f, 1.2f, 6.2f);
+  float doTarget   = clampf(0.8f + (1.0f - x) * 1.7f + cosf(t * 0.14f) * 0.05f, 0.2f, 4.5f);
+  float ltTarget   = clampf(33.0f + x * 3.5f + sinf(t * 0.10f) * 0.25f, 20.0f, 45.0f);
 
-  float nh4Target = curveMap(rawLIQ, 20.0f, 320.0f, 1.45f);
-  float no3Target = curveMap(rawLIQ, 10.0f, 220.0f, 1.20f);
-  float vfaTarget = curveMap(rawLIQ, 0.10f, 6.00f, 1.55f);
+  float nh4Target  = clampf(90.0f + x * 90.0f + m.h2sPpm * 0.02f, 20.0f, 300.0f);
+  float no3Target  = clampf(70.0f + (1.0f - x) * 55.0f + m.co2 * 0.12f, 10.0f, 220.0f);
+  float vfaTarget  = clampf(1.0f + x * 2.0f + m.h2sPpm * 0.0025f, 0.2f, 6.0f);
 
-  nh4Target += (m.h2sPpm / 900.0f) * 35.0f;
-  no3Target += sinf(t * 0.16f) * 2.0f;
-  vfaTarget += (m.co2 / 50.0f) * 0.55f;
-  phTarget  -= (vfaTarget / 6.0f) * 0.35f;
-
-  m.ph                = smoothValue(latest.ph, clampf(phTarget, 5.80f, 8.80f), 0.30f);
-  m.orp               = smoothValue(latest.orp, clampf(orpTarget, -350.0f, 100.0f), 0.25f);
-  m.ec                = smoothValue(latest.ec, clampf(ecTarget, 0.50f, 8.00f), 0.28f);
-  m.dissolvedOxygen   = smoothValue(latest.dissolvedOxygen, clampf(doTarget, 0.05f, 3.50f), 0.25f);
-  m.liquidTemperature = smoothValue(latest.liquidTemperature, clampf(ltTarget, 25.0f, 42.0f), 0.25f);
-  m.ammonium          = smoothValue(latest.ammonium, clampf(nh4Target, 10.0f, 350.0f), 0.34f);
-  m.nitrate           = smoothValue(latest.nitrate, clampf(no3Target, 5.0f, 240.0f), 0.32f);
-  m.vfa               = smoothValue(latest.vfa, clampf(vfaTarget, 0.05f, 6.50f), 0.34f);
+  m.ph                = smoothValue(latest.ph, phTarget, 0.30f);
+  m.orp               = smoothValue(latest.orp, orpTarget, 0.30f);
+  m.ec                = smoothValue(latest.ec, ecTarget, 0.30f);
+  m.dissolvedOxygen   = smoothValue(latest.dissolvedOxygen, doTarget, 0.30f);
+  m.liquidTemperature = smoothValue(latest.liquidTemperature, ltTarget, 0.30f);
+  m.ammonium          = smoothValue(latest.ammonium, nh4Target, 0.28f);
+  m.nitrate           = smoothValue(latest.nitrate, no3Target, 0.28f);
+  m.vfa               = smoothValue(latest.vfa, vfaTarget, 0.28f);
 }
 
 void readOpticalModule(Measurement& m) {
-  int rawOPT = analogRead(PIN_OPT);
-  float xOPT = adcNorm(rawOPT);
+  int rawOpt = analogRead(PIN_OPT);
+  float x = adcNorm(rawOpt);
   float t = millis() / 1000.0f;
 
-  float nirTarget  = curveMap(rawOPT, 10.0f, 100.0f, 0.80f) + sinf(t * 0.27f) * 1.1f;
-  float specTarget = curveMap(rawOPT, 8.0f, 100.0f, 0.95f) + cosf(t * 0.24f) * 1.0f;
+  float nirTarget      = clampf(50.0f + x * 35.0f + sinf(t * 0.12f) * 2.0f, 0.0f, 100.0f);
+  float biomassTarget  = clampf(42.0f + x * 22.0f + (7.8f - m.ph) * 4.0f, 0.0f, 100.0f);
+  float spectralTarget = clampf(55.0f + x * 28.0f + cosf(t * 0.15f) * 2.5f, 0.0f, 100.0f);
 
-  float bqiTarget = 20.0f + xOPT * 60.0f;
-  bqiTarget += (m.ch4 - 50.0f) * 0.35f;
-  bqiTarget -= m.vfa * 4.8f;
-  bqiTarget -= (m.h2sPpm / 900.0f) * 18.0f;
-  bqiTarget += (m.ph - 7.0f) * 6.0f;
+  float odTarget       = clampf(0.38f + x * 0.42f + m.vfa * 0.03f, 0.15f, 1.20f);
+  float colorTarget    = clampf(40.0f + x * 28.0f + m.ammonium * 0.04f, 0.0f, 100.0f);
+  float turbTarget     = clampf(28.0f + x * 38.0f + m.biomassQualityIndex * 0.08f, 0.0f, 100.0f);
 
-  float nirCoupled  = nirTarget + (m.ec * 1.2f) - (m.vfa * 1.5f);
-  float specCoupled = specTarget + (m.co2 * 0.25f) - (m.h2sPpm / 100.0f);
-
-  float colorTarget = 20.0f + xOPT * 70.0f + (m.co2 * 0.25f);
-  float turbidityTarget = 15.0f + (m.vfa * 8.0f) + (m.ec * 4.0f) + xOPT * 15.0f;
-  float odTarget = 0.10f + xOPT * 1.4f + (m.vfa * 0.08f);
-
-  m.nirOrganicIndex     = smoothValue(latest.nirOrganicIndex, clampf(nirCoupled, 0.0f, 100.0f), 0.32f);
-  m.biomassQualityIndex = smoothValue(latest.biomassQualityIndex, clampf(bqiTarget, 0.0f, 100.0f), 0.36f);
-  m.spectralScore       = smoothValue(latest.spectralScore, clampf(specCoupled, 0.0f, 100.0f), 0.30f);
-
-  m.colorIndex          = smoothValue(latest.colorIndex, clampf(colorTarget, 0.0f, 100.0f), 0.28f);
-  m.turbidityIndex      = smoothValue(latest.turbidityIndex, clampf(turbidityTarget, 0.0f, 100.0f), 0.28f);
-  m.opticalDensity      = smoothValue(latest.opticalDensity, clampf(odTarget, 0.0f, 2.5f), 0.25f);
+  m.nirOrganicIndex     = smoothValue(latest.nirOrganicIndex, nirTarget, 0.28f);
+  m.biomassQualityIndex = smoothValue(latest.biomassQualityIndex, biomassTarget, 0.28f);
+  m.spectralScore       = smoothValue(latest.spectralScore, spectralTarget, 0.28f);
+  m.opticalDensity      = smoothValue(latest.opticalDensity, odTarget, 0.25f);
+  m.colorIndex          = smoothValue(latest.colorIndex, colorTarget, 0.25f);
+  m.turbidityIndex      = smoothValue(latest.turbidityIndex, turbTarget, 0.25f);
 }
 
+// ======================================================
+// ANALYTICS
+// ======================================================
 void computeAnalytics(Measurement& m) {
-  float phPenalty = fabsf(m.ph - 7.20f) * 18.0f;
-  float vfaPenalty = m.vfa * 9.0f;
-  float nh4Penalty = m.ammonium * 0.10f;
-  float h2sPenalty = m.h2sPpm * 0.035f;
-  float o2Penalty = (m.o2 > cfg.o2High) ? (m.o2 - cfg.o2High) * 25.0f : 0.0f;
-  float ecPenalty = (m.ec > cfg.ecMax) ? (m.ec - cfg.ecMax) * 10.0f : 0.0f;
+  float phCenter = (cfg.phMin + cfg.phMax) * 0.5f;
+  float phHalf = ((cfg.phMax - cfg.phMin) * 0.5f) + 0.35f;
 
-  float maturity = 100.0f;
-  maturity -= phPenalty;
-  maturity -= vfaPenalty;
-  maturity -= nh4Penalty * 0.30f;
-  maturity -= h2sPenalty * 0.18f;
-  maturity += (m.dissolvedOxygen > cfg.doMin ? 6.0f : -4.0f);
-  maturity += (m.spectralScore - 50.0f) * 0.20f;
-  m.maturityIndex = clampf(maturity, 0.0f, 100.0f);
+  float phScore  = clamp01(1.0f - fabs(m.ph - phCenter) / phHalf);
+  float orpScore = clamp01(1.0f - fabs(m.orp + 90.0f) / 140.0f);
+  float ecScore  = clamp01((cfg.ecMax * 1.30f - m.ec) / (cfg.ecMax * 0.90f));
+  float doScore  = clamp01((m.dissolvedOxygen - cfg.doMin * 0.40f) / (cfg.doMin * 1.80f));
+  float nh4Score = clamp01((cfg.ammoniumHigh * 1.30f - m.ammonium) / (cfg.ammoniumHigh * 0.95f));
+  float no3Score = clamp01((cfg.nitrateHigh * 1.30f - m.nitrate) / (cfg.nitrateHigh * 0.95f));
+  float vfaScore = clamp01((cfg.vfaHigh * 1.35f - m.vfa) / (cfg.vfaHigh * 1.00f));
 
-  float toxicity = 0.0f;
-  toxicity += (m.h2sPpm / 900.0f) * 45.0f;
-  toxicity += (m.ammonium / 320.0f) * 25.0f;
-  toxicity += (m.vfa / 6.5f) * 20.0f;
-  toxicity += (m.ec / 8.0f) * 10.0f;
-  toxicity += o2Penalty * 0.5f;
-  m.toxicityRisk = clampf(toxicity, 0.0f, 100.0f);
+  float nirScore = clamp01(m.nirOrganicIndex / 100.0f);
+  float biomassScore = clamp01(m.biomassQualityIndex / 100.0f);
+  float spectralScore = clamp01(m.spectralScore / 100.0f);
+  float opticalScore = clamp01(1.0f - fabs(m.opticalDensity - 0.65f) / 0.55f);
+  float colorScore = clamp01(1.0f - fabs(m.colorIndex - 58.0f) / 42.0f);
+  float turbidityScore = clamp01(1.0f - fabs(m.turbidityIndex - 48.0f) / 48.0f);
 
-  float imbalance = 0.0f;
-  imbalance += fabsf(m.ph - 7.20f) * 22.0f;
-  imbalance += (m.vfa / 6.5f) * 25.0f;
-  imbalance += (m.ammonium / 320.0f) * 15.0f;
-  imbalance += (m.pressure - 0.95f) * 70.0f;
-  imbalance += (m.h2sPpm / 900.0f) * 15.0f;
-  m.imbalanceRisk = clampf(imbalance, 0.0f, 100.0f);
+  m.toxicityRisk =
+      (1.0f - nh4Score) * 38.0f +
+      (1.0f - vfaScore) * 24.0f +
+      (1.0f - ecScore)  * 16.0f +
+      (1.0f - phScore)  * 12.0f +
+      (1.0f - opticalScore) * 10.0f;
 
-  float fert = 55.0f;
-  fert += (m.nitrate / 220.0f) * 18.0f;
-  fert += (m.ammonium / 320.0f) * 10.0f;
-  fert += (m.maturityIndex - 50.0f) * 0.35f;
-  fert -= (m.toxicityRisk * 0.35f);
-  fert -= (m.vfa * 2.4f);
-  m.fertilizerSuitabilityIndex = clampf(fert, 0.0f, 100.0f);
+  m.imbalanceRisk =
+      (1.0f - phScore) * 24.0f +
+      (1.0f - orpScore) * 20.0f +
+      (1.0f - doScore) * 18.0f +
+      (1.0f - no3Score) * 14.0f +
+      (1.0f - vfaScore) * 12.0f +
+      (1.0f - turbidityScore) * 12.0f;
 
-  float quality = 0.0f;
-  quality += m.maturityIndex * 0.35f;
-  quality += m.fertilizerSuitabilityIndex * 0.25f;
-  quality += m.biomassQualityIndex * 0.20f;
-  quality += m.spectralScore * 0.10f;
-  quality += m.nirOrganicIndex * 0.10f;
-  quality -= m.toxicityRisk * 0.25f;
-  quality -= m.imbalanceRisk * 0.20f;
-  m.sampleQualityScore = clampf(quality, 0.0f, 100.0f);
+  m.toxicityRisk = clampf(m.toxicityRisk, 0.0f, 100.0f);
+  m.imbalanceRisk = clampf(m.imbalanceRisk, 0.0f, 100.0f);
 
-  if (m.sampleQualityScore >= 75.0f && m.toxicityRisk < 35.0f && m.imbalanceRisk < 35.0f) {
-    m.qualityBand = "GOOD";
-    m.recommendation = "Sample is stable. Continue normal monitoring.";
-  } else if (m.sampleQualityScore >= 55.0f && m.toxicityRisk < 55.0f) {
-    m.qualityBand = "ACCEPTABLE";
-    m.recommendation = "Check pH and VFA trend. Mixing may improve stability.";
-  } else if (m.toxicityRisk >= 70.0f) {
+  m.maturityIndex =
+      (phScore * 0.18f +
+       orpScore * 0.16f +
+       vfaScore * 0.14f +
+       no3Score * 0.10f +
+       nh4Score * 0.08f +
+       nirScore * 0.16f +
+       biomassScore * 0.10f +
+       opticalScore * 0.08f) * 100.0f;
+
+  m.fertilizerSuitabilityIndex =
+      (phScore * 0.14f +
+       ecScore * 0.16f +
+       nh4Score * 0.12f +
+       no3Score * 0.14f +
+       vfaScore * 0.10f +
+       biomassScore * 0.12f +
+       spectralScore * 0.12f +
+       colorScore * 0.10f) * 100.0f;
+
+  float rawQuality =
+      m.maturityIndex * 0.30f +
+      m.fertilizerSuitabilityIndex * 0.28f +
+      m.biomassQualityIndex * 0.14f +
+      m.nirOrganicIndex * 0.10f +
+      m.spectralScore * 0.10f +
+      m.colorIndex * 0.04f +
+      m.turbidityIndex * 0.04f;
+
+  float penalty = m.toxicityRisk * 0.30f + m.imbalanceRisk * 0.20f;
+  m.sampleQualityScore = clampf(rawQuality - penalty, 0.0f, 100.0f);
+
+  m.maturityIndex = clampf(m.maturityIndex, 0.0f, 100.0f);
+  m.fertilizerSuitabilityIndex = clampf(m.fertilizerSuitabilityIndex, 0.0f, 100.0f);
+
+  if (m.toxicityRisk >= 70.0f || m.imbalanceRisk >= 65.0f || m.sampleQualityScore < 35.0f) {
     m.qualityBand = "CRITICAL";
-    m.recommendation = "High toxicity risk. Dilution and urgent process correction recommended.";
-  } else if (m.imbalanceRisk >= 65.0f) {
-    m.qualityBand = "UNSTABLE";
-    m.recommendation = "Process imbalance detected. Inspect pH, ammonium and volatile acids.";
-  } else {
+  } else if (m.toxicityRisk >= 40.0f || m.imbalanceRisk >= 40.0f || m.sampleQualityScore < 65.0f) {
     m.qualityBand = "WARNING";
-    m.recommendation = "Quality is below target. Review nutrient balance and sample condition.";
+  } else {
+    m.qualityBand = "NORMAL";
+  }
+
+  if (m.qualityBand == "CRITICAL") {
+    if (m.ammonium > cfg.ammoniumHigh) {
+      m.recommendation = "High toxicity risk. Check ammonium concentration, dilute the sample if needed, and repeat the measurement.";
+    } else if (m.vfa > cfg.vfaHigh) {
+      m.recommendation = "Critical VFA level detected. Reduce overload, stabilize the process, and run a repeat biosensor test.";
+    } else if (m.dissolvedOxygen < cfg.doMin) {
+      m.recommendation = "Critical imbalance detected. Dissolved oxygen is too low. Improve aeration and repeat the analysis.";
+    } else {
+      m.recommendation = "Critical analytical state. Check the sensor slide, calibration, and sample preparation.";
+    }
+  } else if (m.qualityBand == "WARNING") {
+    if (m.ec > cfg.ecMax) {
+      m.recommendation = "Electrical conductivity is elevated. Monitor dissolved salts and repeat the sample check soon.";
+    } else if (m.ammonium > cfg.ammoniumHigh * 0.85f) {
+      m.recommendation = "Ammonium is near the warning zone. Monitor nitrogen profile and repeat the test.";
+    } else if (fabs(m.ph - phCenter) > 0.40f) {
+      m.recommendation = "pH is moving away from the optimal zone. Soft correction and follow-up measurement are recommended.";
+    } else {
+      m.recommendation = "Sample is acceptable but unstable. Keep monitoring the trend and maintain current thresholds.";
+    }
+  } else {
+    if (m.maturityIndex > 72.0f && m.fertilizerSuitabilityIndex > 68.0f) {
+      m.recommendation = "Sample condition is acceptable. Continue monitoring and keep operating parameters stable.";
+    } else {
+      m.recommendation = "Sample is stable. Collect more history for better ML-style analytical interpretation.";
+    }
   }
 }
 
 void acquireAllMeasurements() {
-  Measurement m;
-  m.timestampMs = millis();
-
-  readGasModule(m);
-  readLiquidModule(m);
-  readOpticalModule(m);
-  computeAnalytics(m);
-
-  latest = m;
+  latest.timestampMs = millis();
+  readGasModule(latest);
+  readLiquidModule(latest);
+  readOpticalModule(latest);
+  computeAnalytics(latest);
 }
 
 // ======================================================
-// AUTO CONTROL
+// CONTROL / ALARMS
 // ======================================================
 void applyAutoControl(const Measurement& m) {
   if (systemMode != "AUTO") return;
 
-  bool oldHeater = heaterState;
-  bool oldVent   = ventState;
-  bool oldPump   = pumpState;
-  bool oldMixer  = mixerState;
-  bool oldValve  = valveState;
-
-  if (m.gasTemperature < cfg.gasTempMin) heaterState = true;
-  if (m.gasTemperature > cfg.gasTempMax) heaterState = false;
-
-  if (m.h2sPpm > cfg.h2sHigh || m.pressure > 1.15f || m.o2 > cfg.o2High) ventState = true;
-  if (m.h2sPpm < (cfg.h2sHigh - 40.0f) && m.pressure < 1.08f && m.o2 < (cfg.o2High - 0.15f)) ventState = false;
-
-  if (m.vfa > cfg.vfaHigh || m.ammonium > cfg.ammoniumHigh || m.biomassQualityIndex < 52.0f) pumpState = true;
-  if (m.vfa < (cfg.vfaHigh - 0.5f) && m.ammonium < (cfg.ammoniumHigh - 25.0f) && m.biomassQualityIndex > 58.0f) pumpState = false;
-
-  if (m.ph < cfg.phMin || m.ph > cfg.phMax || m.biomassQualityIndex < 60.0f || m.h2sPpm > 300.0f) mixerState = true;
-  if (m.ph >= cfg.phMin && m.ph <= cfg.phMax && m.biomassQualityIndex > 66.0f && m.h2sPpm < 220.0f) mixerState = false;
-
-  if (m.pressure > 1.16f || m.o2 > cfg.o2High || m.h2sPpm > 350.0f) valveState = true;
-  if (m.pressure < 1.05f && m.o2 < (cfg.o2High - 0.12f) && m.h2sPpm < 240.0f) valveState = false;
+  heaterState = (m.gasTemperature < cfg.gasTempMin);
+  ventState   = (m.h2sPpm > cfg.h2sHigh || m.o2 > cfg.o2High);
+  pumpState   = (m.vfa > cfg.vfaHigh || m.dissolvedOxygen < cfg.doMin);
+  mixerState  = (m.sampleQualityScore < 75.0f || m.imbalanceRisk > 35.0f);
+  valveState  = (m.qualityBand != "CRITICAL");
 
   applyOutputs();
-
-  if (oldHeater != heaterState) pushEventToFirebase("info", "Heater changed", heaterState ? "Automatic heater ON" : "Automatic heater OFF");
-  if (oldVent != ventState)     pushEventToFirebase("info", "Ventilation changed", ventState ? "Automatic ventilation ON" : "Automatic ventilation OFF");
-  if (oldPump != pumpState)     pushEventToFirebase("info", "Pump changed", pumpState ? "Automatic pump ON" : "Automatic pump OFF");
-  if (oldMixer != mixerState)   pushEventToFirebase("info", "Mixer changed", mixerState ? "Automatic mixer ON" : "Automatic mixer OFF");
-  if (oldValve != valveState)   pushEventToFirebase("info", "Valve changed", valveState ? "Automatic valve OPEN" : "Automatic valve CLOSED");
 }
 
-// ======================================================
-// EVENTS / ALARMS
-// ======================================================
 void pushEventToFirebase(const String& level, const String& eventName, const String& details, const String& source) {
-  String path = "/devices/" + String(DEVICE_ID) + "/events";
-
   String json = "{";
-  json += "\"timestamp\":\"" + String(millis()) + "\",";
   json += "\"level\":\"" + jsonEscape(level) + "\",";
-  json += "\"event\":\"" + jsonEscape(eventName) + "\",";
+  json += "\"eventName\":\"" + jsonEscape(eventName) + "\",";
   json += "\"details\":\"" + jsonEscape(details) + "\",";
-  json += "\"source\":\"" + jsonEscape(source) + "\"";
+  json += "\"source\":\"" + jsonEscape(source) + "\",";
+  json += "\"timestamp\":\"" + String(millis()) + "\"";
   json += "}";
 
-  firebasePost(path, json);
+  firebasePost("/devices/" + String(DEVICE_ID) + "/events", json);
 }
 
 void processAlarms(const Measurement& m) {
   if (m.h2sPpm > cfg.h2sHigh && !h2sAlarmSent) {
-    pushEventToFirebase("danger", "H2S high", "Hydrogen sulfide exceeded threshold");
     h2sAlarmSent = true;
+    pushEventToFirebase("danger", "H2S high", "Hydrogen sulfide exceeded threshold");
   }
   if (m.h2sPpm <= cfg.h2sHigh) h2sAlarmSent = false;
 
   if (m.ch4 < cfg.ch4Low && !ch4AlarmSent) {
-    pushEventToFirebase("warn", "CH4 low", "Methane below threshold");
     ch4AlarmSent = true;
+    pushEventToFirebase("warn", "CH4 low", "Methane dropped below threshold");
   }
   if (m.ch4 >= cfg.ch4Low) ch4AlarmSent = false;
 
   if (m.o2 > cfg.o2High && !o2AlarmSent) {
-    pushEventToFirebase("warn", "O2 high", "Oxygen above threshold");
     o2AlarmSent = true;
+    pushEventToFirebase("danger", "O2 high", "Oxygen exceeded threshold");
   }
   if (m.o2 <= cfg.o2High) o2AlarmSent = false;
 
   if ((m.ph < cfg.phMin || m.ph > cfg.phMax) && !phAlarmSent) {
-    pushEventToFirebase("warn", "pH out of range", "pH outside allowed band");
     phAlarmSent = true;
+    pushEventToFirebase("warn", "pH out of range", "Liquid pH is outside acceptable band");
   }
   if (m.ph >= cfg.phMin && m.ph <= cfg.phMax) phAlarmSent = false;
 
   if (m.ammonium > cfg.ammoniumHigh && !ammoniumAlarmSent) {
-    pushEventToFirebase("warn", "Ammonium high", "Ammonium exceeded threshold");
     ammoniumAlarmSent = true;
+    pushEventToFirebase("warn", "Ammonium high", "Ammonium exceeded threshold");
   }
   if (m.ammonium <= cfg.ammoniumHigh) ammoniumAlarmSent = false;
 
   if (m.nitrate > cfg.nitrateHigh && !nitrateAlarmSent) {
-    pushEventToFirebase("warn", "Nitrate high", "Nitrate exceeded threshold");
     nitrateAlarmSent = true;
+    pushEventToFirebase("warn", "Nitrate high", "Nitrate exceeded threshold");
   }
   if (m.nitrate <= cfg.nitrateHigh) nitrateAlarmSent = false;
 
   if (m.vfa > cfg.vfaHigh && !vfaAlarmSent) {
-    pushEventToFirebase("warn", "VFA high", "Volatile fatty acids exceeded threshold");
     vfaAlarmSent = true;
+    pushEventToFirebase("warn", "VFA high", "Volatile fatty acids exceeded threshold");
   }
   if (m.vfa <= cfg.vfaHigh) vfaAlarmSent = false;
 
   if (m.toxicityRisk > 70.0f && !toxicityAlarmSent) {
-    pushEventToFirebase("danger", "Toxicity risk high", "Calculated toxicity risk exceeded critical band");
     toxicityAlarmSent = true;
+    pushEventToFirebase("danger", "Toxicity risk high", "Calculated toxicity risk exceeded critical band");
   }
   if (m.toxicityRisk <= 70.0f) toxicityAlarmSent = false;
 
   if (m.imbalanceRisk > 65.0f && !imbalanceAlarmSent) {
-    pushEventToFirebase("warn", "Imbalance risk high", "Process imbalance detected by analytical module");
     imbalanceAlarmSent = true;
+    pushEventToFirebase("danger", "Imbalance risk high", "Calculated process imbalance exceeded critical band");
   }
   if (m.imbalanceRisk <= 65.0f) imbalanceAlarmSent = false;
 
@@ -748,14 +730,31 @@ void processAlarms(const Measurement& m) {
 // JSON BUILDERS
 // ======================================================
 String buildCurrentJson(const Measurement& m) {
+  String recommendation = jsonEscape(m.recommendation);
+  String qualityBand = jsonEscape(m.qualityBand);
+
   String json = "{";
 
-  json += "\"timestamp\":\"" + String(m.timestampMs) + "\",";
+  json += "\"deviceId\":\"" + String(DEVICE_ID) + "\",";
+  json += "\"firmwareVersion\":\"" + String(FIRMWARE_VERSION) + "\",";
+
+  json += "\"mode\":\"" + systemMode + "\",";
+  json += "\"heater\":" + String(heaterState ? "true" : "false") + ",";
+  json += "\"ventilation\":" + String(ventState ? "true" : "false") + ",";
+  json += "\"pump\":" + String(pumpState ? "true" : "false") + ",";
+  json += "\"mixer\":" + String(mixerState ? "true" : "false") + ",";
+  json += "\"valve\":" + String(valveState ? "true" : "false") + ",";
+  json += "\"wifi\":" + String(WiFi.status() == WL_CONNECTED ? "true" : "false") + ",";
+  json += "\"firebase\":true,";
+
   json += "\"ch4\":" + String(m.ch4, 2) + ",";
   json += "\"co2\":" + String(m.co2, 2) + ",";
   json += "\"h2sPpm\":" + String(m.h2sPpm, 2) + ",";
+  json += "\"h2s\":" + String(m.h2sPpm, 2) + ",";
   json += "\"o2\":" + String(m.o2, 2) + ",";
   json += "\"gasTemperature\":" + String(m.gasTemperature, 2) + ",";
+  json += "\"temperature\":" + String(m.gasTemperature, 2) + ",";
+  json += "\"temp\":" + String(m.gasTemperature, 2) + ",";
   json += "\"humidity\":" + String(m.humidity, 2) + ",";
   json += "\"pressure\":" + String(m.pressure, 2) + ",";
 
@@ -771,37 +770,20 @@ String buildCurrentJson(const Measurement& m) {
   json += "\"nirOrganicIndex\":" + String(m.nirOrganicIndex, 2) + ",";
   json += "\"biomassQualityIndex\":" + String(m.biomassQualityIndex, 2) + ",";
   json += "\"spectralScore\":" + String(m.spectralScore, 2) + ",";
-
+  json += "\"opticalDensity\":" + String(m.opticalDensity, 2) + ",";
   json += "\"colorIndex\":" + String(m.colorIndex, 2) + ",";
   json += "\"turbidityIndex\":" + String(m.turbidityIndex, 2) + ",";
-  json += "\"opticalDensity\":" + String(m.opticalDensity, 2) + ",";
 
   json += "\"maturityIndex\":" + String(m.maturityIndex, 2) + ",";
   json += "\"fertilizerSuitabilityIndex\":" + String(m.fertilizerSuitabilityIndex, 2) + ",";
+  json += "\"sampleQualityScore\":" + String(m.sampleQualityScore, 2) + ",";
   json += "\"toxicityRisk\":" + String(m.toxicityRisk, 2) + ",";
   json += "\"imbalanceRisk\":" + String(m.imbalanceRisk, 2) + ",";
-  json += "\"sampleQualityScore\":" + String(m.sampleQualityScore, 2) + ",";
-  json += "\"qualityBand\":\"" + jsonEscape(m.qualityBand) + "\",";
-  json += "\"recommendation\":\"" + jsonEscape(m.recommendation) + "\",";
+  json += "\"qualityBand\":\"" + qualityBand + "\",";
+  json += "\"recommendation\":\"" + recommendation + "\",";
 
-  json += "\"heater\":";
-  json += heaterState ? "true," : "false,";
-  json += "\"ventilation\":";
-  json += ventState ? "true," : "false,";
-  json += "\"pump\":";
-  json += pumpState ? "true," : "false,";
-  json += "\"mixer\":";
-  json += mixerState ? "true," : "false,";
-  json += "\"valve\":";
-  json += valveState ? "true," : "false,";
-
-  json += "\"mode\":\"" + jsonEscape(systemMode) + "\",";
-  json += "\"wifi\":";
-  json += WiFi.status() == WL_CONNECTED ? "true," : "false,";
-  json += "\"firebase\":true,";
-  json += "\"firmwareVersion\":\"" + String(FIRMWARE_VERSION) + "\",";
-  json += "\"deviceId\":\"" + String(DEVICE_ID) + "\",";
-  json += "\"uptimeSec\":" + String(millis() / 1000);
+  json += "\"uptimeSec\":" + String(millis() / 1000UL) + ",";
+  json += "\"timestamp\":\"" + String(m.timestampMs) + "\"";
 
   json += "}";
   return json;
@@ -809,24 +791,24 @@ String buildCurrentJson(const Measurement& m) {
 
 String buildHistoryJson(const Measurement& m) {
   String json = "{";
+  json += "\"deviceId\":\"" + String(DEVICE_ID) + "\",";
   json += "\"timestamp\":\"" + String(m.timestampMs) + "\",";
+  json += "\"uptimeSec\":" + String(millis() / 1000UL) + ",";
   json += "\"ch4\":" + String(m.ch4, 2) + ",";
   json += "\"co2\":" + String(m.co2, 2) + ",";
   json += "\"h2sPpm\":" + String(m.h2sPpm, 2) + ",";
   json += "\"o2\":" + String(m.o2, 2) + ",";
-  json += "\"gasTemperature\":" + String(m.gasTemperature, 2) + ",";
   json += "\"ph\":" + String(m.ph, 2) + ",";
   json += "\"ec\":" + String(m.ec, 2) + ",";
   json += "\"dissolvedOxygen\":" + String(m.dissolvedOxygen, 2) + ",";
   json += "\"ammonium\":" + String(m.ammonium, 2) + ",";
   json += "\"nitrate\":" + String(m.nitrate, 2) + ",";
   json += "\"vfa\":" + String(m.vfa, 2) + ",";
-  json += "\"nirOrganicIndex\":" + String(m.nirOrganicIndex, 2) + ",";
   json += "\"biomassQualityIndex\":" + String(m.biomassQualityIndex, 2) + ",";
-  json += "\"spectralScore\":" + String(m.spectralScore, 2) + ",";
-  json += "\"maturityIndex\":" + String(m.maturityIndex, 2) + ",";
+  json += "\"sampleQualityScore\":" + String(m.sampleQualityScore, 2) + ",";
   json += "\"toxicityRisk\":" + String(m.toxicityRisk, 2) + ",";
-  json += "\"sampleQualityScore\":" + String(m.sampleQualityScore, 2);
+  json += "\"imbalanceRisk\":" + String(m.imbalanceRisk, 2) + ",";
+  json += "\"qualityBand\":\"" + jsonEscape(m.qualityBand) + "\"";
   json += "}";
   return json;
 }
@@ -852,178 +834,172 @@ String buildSettingsJson() {
 String buildControlJson() {
   String json = "{";
   json += "\"mode\":\"" + systemMode + "\",";
-  json += "\"heater\":";
-  json += heaterState ? "true," : "false,";
-  json += "\"ventilation\":";
-  json += ventState ? "true," : "false,";
-  json += "\"pump\":";
-  json += pumpState ? "true," : "false,";
-  json += "\"mixer\":";
-  json += mixerState ? "true," : "false,";
-  json += "\"valve\":";
-  json += valveState ? "true" : "false";
+  json += "\"heater\":" + String(heaterState ? "true" : "false") + ",";
+  json += "\"ventilation\":" + String(ventState ? "true" : "false") + ",";
+  json += "\"pump\":" + String(pumpState ? "true" : "false") + ",";
+  json += "\"mixer\":" + String(mixerState ? "true" : "false") + ",";
+  json += "\"valve\":" + String(valveState ? "true" : "false");
   json += "}";
   return json;
 }
 
 String buildHeartbeatJson() {
   String json = "{";
-  json += "\"timestamp\":\"" + String(millis()) + "\",";
-  json += "\"uptimeSec\":" + String(millis() / 1000) + ",";
-  json += "\"wifi\":";
-  json += WiFi.status() == WL_CONNECTED ? "true," : "false,";
+  json += "\"deviceId\":\"" + String(DEVICE_ID) + "\",";
   json += "\"firmwareVersion\":\"" + String(FIRMWARE_VERSION) + "\",";
-  json += "\"deviceId\":\"" + String(DEVICE_ID) + "\"";
+  json += "\"wifi\":" + String(WiFi.status() == WL_CONNECTED ? "true" : "false") + ",";
+  json += "\"firebase\":true,";
+  json += "\"uptimeSec\":" + String(millis() / 1000UL) + ",";
+  json += "\"timestamp\":\"" + String(millis()) + "\"";
   json += "}";
   return json;
 }
 
 // ======================================================
-// FIREBASE PUSH
+// FIREBASE PUSHERS
 // ======================================================
 void pushCurrentToFirebase(const Measurement& m) {
-  firebasePut("/devices/" + String(DEVICE_ID) + "/current", buildCurrentJson(m));
+  String path = "/devices/" + String(DEVICE_ID) + "/current";
+  String payload = buildCurrentJson(m);
+  firebasePut(path, payload);
 }
 
 void pushHistoryToFirebase(const Measurement& m) {
-  firebasePost("/devices/" + String(DEVICE_ID) + "/history", buildHistoryJson(m));
+  String path = "/devices/" + String(DEVICE_ID) + "/history";
+  String payload = buildHistoryJson(m);
+  firebasePost(path, payload);
 }
 
 void pushSettingsToFirebase() {
-  firebasePut("/devices/" + String(DEVICE_ID) + "/settings/current", buildSettingsJson());
+  String path = "/devices/" + String(DEVICE_ID) + "/settings/current";
+  firebasePut(path, buildSettingsJson());
 }
 
 void pushControlToFirebase() {
-  firebasePut("/devices/" + String(DEVICE_ID) + "/control/current", buildControlJson());
+  String path = "/devices/" + String(DEVICE_ID) + "/control/current";
+  firebasePut(path, buildControlJson());
 }
 
 void pushHeartbeatToFirebase() {
-  firebasePut("/devices/" + String(DEVICE_ID) + "/debug/heartbeat", buildHeartbeatJson());
+  String path = "/devices/" + String(DEVICE_ID) + "/heartbeat/current";
+  firebasePut(path, buildHeartbeatJson());
 }
 
 // ======================================================
-// FIREBASE POLL
+// FIREBASE POLLING
 // ======================================================
 void pollControlFromFirebase() {
-  String json = firebaseGet("/devices/" + String(DEVICE_ID) + "/control/current");
-  if (json.length() == 0 || json == "null") return;
+  String payload = firebaseGet("/devices/" + String(DEVICE_ID) + "/control/current");
+  if (payload.length() == 0 || payload == "null") return;
 
-  String oldMode = systemMode;
-  bool oldHeater = heaterState;
-  bool oldVent   = ventState;
-  bool oldPump   = pumpState;
-  bool oldMixer  = mixerState;
-  bool oldValve  = valveState;
-
-  systemMode = extractJsonString(json, "mode", systemMode);
+  String mode = extractJsonString(payload, "mode", systemMode);
+  systemMode = (mode == "MANUAL") ? "MANUAL" : "AUTO";
 
   if (systemMode == "MANUAL") {
-    heaterState = extractJsonBool(json, "heater", heaterState);
-    ventState   = extractJsonBool(json, "ventilation", ventState);
-    pumpState   = extractJsonBool(json, "pump", pumpState);
-    mixerState  = extractJsonBool(json, "mixer", mixerState);
-    valveState  = extractJsonBool(json, "valve", valveState);
+    heaterState = extractJsonBool(payload, "heater", heaterState);
+    ventState   = extractJsonBool(payload, "ventilation", ventState);
+    pumpState   = extractJsonBool(payload, "pump", pumpState);
+    mixerState  = extractJsonBool(payload, "mixer", mixerState);
+    valveState  = extractJsonBool(payload, "valve", valveState);
     applyOutputs();
   }
-
-  if (oldMode != systemMode) pushEventToFirebase("info", "Mode changed", "Mode switched to " + systemMode);
-  if (oldHeater != heaterState) pushEventToFirebase("info", "Heater changed", heaterState ? "Heater ON from dashboard" : "Heater OFF from dashboard");
-  if (oldVent != ventState)     pushEventToFirebase("info", "Ventilation changed", ventState ? "Vent ON from dashboard" : "Vent OFF from dashboard");
-  if (oldPump != pumpState)     pushEventToFirebase("info", "Pump changed", pumpState ? "Pump ON from dashboard" : "Pump OFF from dashboard");
-  if (oldMixer != mixerState)   pushEventToFirebase("info", "Mixer changed", mixerState ? "Mixer ON from dashboard" : "Mixer OFF from dashboard");
-  if (oldValve != valveState)   pushEventToFirebase("info", "Valve changed", valveState ? "Valve OPEN from dashboard" : "Valve CLOSED from dashboard");
 }
 
 void pollSettingsFromFirebase() {
-  String json = firebaseGet("/devices/" + String(DEVICE_ID) + "/settings/current");
-  if (json.length() == 0 || json == "null") return;
+  String payload = firebaseGet("/devices/" + String(DEVICE_ID) + "/settings/current");
+  if (payload.length() == 0 || payload == "null") return;
 
-  cfg.gasTempMin   = extractJsonNumber(json, "gasTempMin", cfg.gasTempMin);
-  cfg.gasTempMax   = extractJsonNumber(json, "gasTempMax", cfg.gasTempMax);
-  cfg.ch4Low       = extractJsonNumber(json, "ch4Low", cfg.ch4Low);
-  cfg.h2sHigh      = extractJsonNumber(json, "h2sHigh", cfg.h2sHigh);
-  cfg.o2High       = extractJsonNumber(json, "o2High", cfg.o2High);
-  cfg.phMin        = extractJsonNumber(json, "phMin", cfg.phMin);
-  cfg.phMax        = extractJsonNumber(json, "phMax", cfg.phMax);
-  cfg.ecMax        = extractJsonNumber(json, "ecMax", cfg.ecMax);
-  cfg.doMin        = extractJsonNumber(json, "doMin", cfg.doMin);
-  cfg.ammoniumHigh = extractJsonNumber(json, "ammoniumHigh", cfg.ammoniumHigh);
-  cfg.nitrateHigh  = extractJsonNumber(json, "nitrateHigh", cfg.nitrateHigh);
-  cfg.vfaHigh      = extractJsonNumber(json, "vfaHigh", cfg.vfaHigh);
+  cfg.gasTempMin   = extractJsonNumber(payload, "gasTempMin", cfg.gasTempMin);
+  cfg.gasTempMax   = extractJsonNumber(payload, "gasTempMax", cfg.gasTempMax);
+  cfg.ch4Low       = extractJsonNumber(payload, "ch4Low", cfg.ch4Low);
+  cfg.h2sHigh      = extractJsonNumber(payload, "h2sHigh", cfg.h2sHigh);
+  cfg.o2High       = extractJsonNumber(payload, "o2High", cfg.o2High);
+  cfg.phMin        = extractJsonNumber(payload, "phMin", cfg.phMin);
+  cfg.phMax        = extractJsonNumber(payload, "phMax", cfg.phMax);
+  cfg.ecMax        = extractJsonNumber(payload, "ecMax", cfg.ecMax);
+  cfg.doMin        = extractJsonNumber(payload, "doMin", cfg.doMin);
+  cfg.ammoniumHigh = extractJsonNumber(payload, "ammoniumHigh", cfg.ammoniumHigh);
+  cfg.nitrateHigh  = extractJsonNumber(payload, "nitrateHigh", cfg.nitrateHigh);
+  cfg.vfaHigh      = extractJsonNumber(payload, "vfaHigh", cfg.vfaHigh);
 }
 
 void bootstrapFirebase() {
-  String settingsJson = firebaseGet("/devices/" + String(DEVICE_ID) + "/settings/current");
-  if (settingsJson.length() == 0 || settingsJson == "null") {
-    pushSettingsToFirebase();
-  }
-
-  String controlJson = firebaseGet("/devices/" + String(DEVICE_ID) + "/control/current");
-  if (controlJson.length() == 0 || controlJson == "null") {
-    pushControlToFirebase();
-  }
+  pushSettingsToFirebase();
+  pushControlToFirebase();
+  pushHeartbeatToFirebase();
 }
 
 // ======================================================
-// BUTTON
+// INPUT
 // ======================================================
 void checkManualButton() {
-  static bool lastRaw = HIGH;
-  static bool stableState = HIGH;
-  static unsigned long lastDebounce = 0;
+  static bool lastRawState = HIGH;
+  static unsigned long pressStarted = 0;
 
-  bool reading = digitalRead(PIN_MANUAL_BUTTON);
-
-  if (reading != lastRaw) {
-    lastDebounce = millis();
-    lastRaw = reading;
+  bool raw = digitalRead(PIN_MANUAL_BUTTON);
+  if (raw != lastRawState) {
+    delay(5);
+    raw = digitalRead(PIN_MANUAL_BUTTON);
   }
 
-  if ((millis() - lastDebounce) > 40) {
-    if (stableState != reading) {
-      stableState = reading;
+  if (lastRawState == HIGH && raw == LOW) {
+    pressStarted = millis();
+  }
 
-      if (stableState == LOW) {
-        systemMode = (systemMode == "AUTO") ? "MANUAL" : "AUTO";
-        pushControlToFirebase();
-        pushEventToFirebase("info", "Button mode toggle", "Manual button toggled mode to " + systemMode);
+  if (lastRawState == LOW && raw == HIGH) {
+    unsigned long held = millis() - pressStarted;
+    if (held > 600UL) {
+      systemMode = (systemMode == "AUTO") ? "MANUAL" : "AUTO";
+      if (systemMode == "AUTO") {
+        applyAutoControl(latest);
       }
+      pushControlToFirebase();
+      pushEventToFirebase("info", "Mode changed", String("Local button toggled mode to ") + systemMode);
+    } else {
+      currentPage = (ScreenPage)((currentPage + 1) % PAGE_COUNT);
     }
   }
+
+  lastRawState = raw;
 }
 
 // ======================================================
-// TFT
+// DISPLAY
 // ======================================================
 void drawHeader(const char* title, uint16_t color) {
-  tft.fillRect(0, 0, 320, 26, color);
-  tft.setTextColor(ILI9341_WHITE, color);
+  tft.fillScreen(ILI9341_BLACK);
+  tft.fillRect(0, 0, 320, 24, color);
   tft.setTextSize(2);
-  tft.setCursor(6, 6);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(8, 5);
   tft.print(title);
+
+  tft.setTextSize(1);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setCursor(220, 6);
+  tft.print(systemMode);
 }
 
 void drawLineText(int y, const String& label, const String& value, uint16_t color) {
   tft.setTextSize(2);
-  tft.setTextColor(ILI9341_CYAN, ILI9341_BLACK);
-  tft.setCursor(6, y);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setCursor(8, y);
   tft.print(label);
 
-  tft.setTextColor(color, ILI9341_BLACK);
+  tft.setTextColor(color);
   tft.setCursor(150, y);
   tft.print(value);
 }
 
 void drawOverviewPage() {
-  tft.fillScreen(ILI9341_BLACK);
-  drawHeader("OVERVIEW", ILI9341_BLUE);
-  drawLineText(36,  "pH",    String(latest.ph, 2), ILI9341_GREEN);
-  drawLineText(60,  "EC",    String(latest.ec, 2), ILI9341_YELLOW);
-  drawLineText(84,  "DO",    String(latest.dissolvedOxygen, 2), ILI9341_CYAN);
-  drawLineText(108, "NH4",   String(latest.ammonium, 0), ILI9341_ORANGE);
-  drawLineText(132, "VFA",   String(latest.vfa, 2), ILI9341_MAGENTA);
-  drawLineText(156, "BQI",   String(latest.biomassQualityIndex, 1), ILI9341_WHITE);
-  drawLineText(180, "Qual",  String(latest.sampleQualityScore, 1), ILI9341_GREEN);
+  drawHeader("OVERVIEW", ILI9341_CYAN);
+  drawLineText(36,  "pH",       String(latest.ph, 2), ILI9341_GREEN);
+  drawLineText(60,  "EC",       String(latest.ec, 2), ILI9341_YELLOW);
+  drawLineText(84,  "DO",       String(latest.dissolvedOxygen, 2), ILI9341_CYAN);
+  drawLineText(108, "NH4",      String(latest.ammonium, 0), COLOR_ORANGE);
+  drawLineText(132, "VFA",      String(latest.vfa, 2), ILI9341_MAGENTA);
+  drawLineText(156, "BQI",      String(latest.biomassQualityIndex, 1), ILI9341_GREEN);
+  drawLineText(180, "QUAL",     String(latest.sampleQualityScore, 1), ILI9341_WHITE);
 
   tft.setTextSize(1);
   tft.setTextColor(ILI9341_WHITE);
@@ -1032,15 +1008,14 @@ void drawOverviewPage() {
 }
 
 void drawLiquidPage() {
-  tft.fillScreen(ILI9341_BLACK);
-  drawHeader("LIQUID SAMPLE", ILI9341_DARKCYAN);
-  drawLineText(36,  "ORP",    String(latest.orp, 0), ILI9341_CYAN);
-  drawLineText(60,  "Temp",   String(latest.liquidTemperature, 1), ILI9341_WHITE);
-  drawLineText(84,  "NO3",    String(latest.nitrate, 0), ILI9341_YELLOW);
-  drawLineText(108, "OD",     String(latest.opticalDensity, 2), ILI9341_GREEN);
-  drawLineText(132, "Color",  String(latest.colorIndex, 0), ILI9341_ORANGE);
-  drawLineText(156, "Turb",   String(latest.turbidityIndex, 0), ILI9341_MAGENTA);
-  drawLineText(180, "Mature", String(latest.maturityIndex, 1), ILI9341_GREEN);
+  drawHeader("LIQUID SAMPLE", ILI9341_GREEN);
+  drawLineText(36,  "ORP",     String(latest.orp, 0), ILI9341_CYAN);
+  drawLineText(60,  "Temp",    String(latest.liquidTemperature, 1), ILI9341_YELLOW);
+  drawLineText(84,  "NO3",     String(latest.nitrate, 0), ILI9341_YELLOW);
+  drawLineText(108, "OD",      String(latest.opticalDensity, 2), ILI9341_GREEN);
+  drawLineText(132, "Color",   String(latest.colorIndex, 1), COLOR_ORANGE);
+  drawLineText(156, "Turb",    String(latest.turbidityIndex, 1), ILI9341_MAGENTA);
+  drawLineText(180, "Band",    latest.qualityBand, latest.qualityBand == "CRITICAL" ? ILI9341_RED : (latest.qualityBand == "WARNING" ? ILI9341_YELLOW : ILI9341_GREEN));
 
   tft.setTextSize(1);
   tft.setTextColor(ILI9341_WHITE);
@@ -1049,12 +1024,14 @@ void drawLiquidPage() {
 }
 
 void drawOpticalPage() {
-  tft.fillScreen(ILI9341_BLACK);
-  drawHeader("OPTICAL / ML", ILI9341_NAVY);
-  drawLineText(42,  "NIR",  String(latest.nirOrganicIndex, 1), ILI9341_YELLOW);
-  drawLineText(78,  "SPEC", String(latest.spectralScore, 1), ILI9341_ORANGE);
-  drawLineText(114, "BQI",  String(latest.biomassQualityIndex, 1), ILI9341_GREEN);
-  drawLineText(150, "Suit", String(latest.fertilizerSuitabilityIndex, 1), ILI9341_CYAN);
+  drawHeader("OPTICAL / ML", COLOR_ORANGE);
+  drawLineText(36,  "NIR",      String(latest.nirOrganicIndex, 1), ILI9341_YELLOW);
+  drawLineText(60,  "BQI",      String(latest.biomassQualityIndex, 1), ILI9341_GREEN);
+  drawLineText(84,  "Spec",     String(latest.spectralScore, 1), ILI9341_CYAN);
+  drawLineText(108, "Mature",   String(latest.maturityIndex, 1), ILI9341_WHITE);
+  drawLineText(132, "Fert",     String(latest.fertilizerSuitabilityIndex, 1), ILI9341_WHITE);
+  drawLineText(156, "Toxic",    String(latest.toxicityRisk, 1), ILI9341_RED);
+  drawLineText(180, "Imbal",    String(latest.imbalanceRisk, 1), ILI9341_MAGENTA);
 
   tft.setTextSize(1);
   tft.setTextColor(ILI9341_WHITE);
@@ -1063,22 +1040,14 @@ void drawOpticalPage() {
 }
 
 void drawQualityPage() {
-  tft.fillScreen(ILI9341_BLACK);
-  drawHeader("QUALITY", ILI9341_MAROON);
-  drawLineText(36,  "Toxic", String(latest.toxicityRisk, 1), ILI9341_RED);
-  drawLineText(60,  "Imbal", String(latest.imbalanceRisk, 1), ILI9341_YELLOW);
-  drawLineText(84,  "Band",  latest.qualityBand, ILI9341_GREEN);
-  drawLineText(108, "Mode",  systemMode, ILI9341_WHITE);
-
-  tft.setTextSize(1);
-  tft.setTextColor(ILI9341_CYAN);
-  tft.setCursor(8, 145);
-  tft.print("Rec:");
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setCursor(8, 160);
-  String rec = latest.recommendation;
-  if (rec.length() > 42) rec = rec.substring(0, 42);
-  tft.print(rec);
+  drawHeader("QUALITY", ILI9341_MAGENTA);
+  drawLineText(36,  "CH4",      String(latest.ch4, 1), ILI9341_GREEN);
+  drawLineText(60,  "CO2",      String(latest.co2, 1), ILI9341_YELLOW);
+  drawLineText(84,  "H2S",      String(latest.h2sPpm, 0), ILI9341_RED);
+  drawLineText(108, "O2",       String(latest.o2, 2), ILI9341_CYAN);
+  drawLineText(132, "Gas T",    String(latest.gasTemperature, 1), COLOR_ORANGE);
+  drawLineText(156, "Press",    String(latest.pressure, 2), ILI9341_WHITE);
+  drawLineText(180, "Rec",      latest.qualityBand, latest.qualityBand == "CRITICAL" ? ILI9341_RED : (latest.qualityBand == "WARNING" ? ILI9341_YELLOW : ILI9341_GREEN));
 
   tft.setTextSize(1);
   tft.setTextColor(ILI9341_WHITE);
@@ -1087,14 +1056,14 @@ void drawQualityPage() {
 }
 
 void drawControlPage() {
-  tft.fillScreen(ILI9341_BLACK);
-  drawHeader("CONTROL", ILI9341_PURPLE);
-  drawLineText(36,  "Heater", heaterState ? "ON" : "OFF", heaterState ? ILI9341_GREEN : ILI9341_RED);
-  drawLineText(60,  "Vent",   ventState ? "ON" : "OFF", ventState ? ILI9341_GREEN : ILI9341_RED);
-  drawLineText(84,  "Pump",   pumpState ? "ON" : "OFF", pumpState ? ILI9341_GREEN : ILI9341_RED);
-  drawLineText(108, "Mixer",  mixerState ? "ON" : "OFF", mixerState ? ILI9341_GREEN : ILI9341_RED);
-  drawLineText(132, "Valve",  valveState ? "OPEN" : "CLOSE", valveState ? ILI9341_GREEN : ILI9341_RED);
-  drawLineText(156, "WiFi",   WiFi.status() == WL_CONNECTED ? "OK" : "DOWN", ILI9341_WHITE);
+  drawHeader("CONTROL", ILI9341_BLUE);
+  drawLineText(36,  "Heater",  heaterState ? "ON" : "OFF", heaterState ? ILI9341_GREEN : ILI9341_RED);
+  drawLineText(60,  "Vent",    ventState   ? "ON" : "OFF", ventState   ? ILI9341_GREEN : ILI9341_RED);
+  drawLineText(84,  "Pump",    pumpState   ? "ON" : "OFF", pumpState   ? ILI9341_GREEN : ILI9341_RED);
+  drawLineText(108, "Mixer",   mixerState  ? "ON" : "OFF", mixerState  ? ILI9341_GREEN : ILI9341_RED);
+  drawLineText(132, "Valve",   valveState  ? "OPEN" : "CLOSE", valveState ? ILI9341_GREEN : ILI9341_RED);
+  drawLineText(156, "WiFi",    WiFi.status() == WL_CONNECTED ? "OK" : "DOWN", ILI9341_WHITE);
+  drawLineText(180, "Mode",    systemMode, ILI9341_WHITE);
 
   tft.setTextSize(1);
   tft.setTextColor(ILI9341_WHITE);
@@ -1132,20 +1101,16 @@ void printDebug() {
   Serial.print(latest.biomassQualityIndex, 1);
   Serial.print(" | QUAL=");
   Serial.print(latest.sampleQualityScore, 1);
-  Serial.print(" | REC=");
+  Serial.print(" | BAND=");
   Serial.println(latest.qualityBand);
 }
 
 // ======================================================
-// SETUP
+// SETUP / LOOP
 // ======================================================
 void setup() {
   Serial.begin(115200);
   delay(100);
-
-  Serial.println("BOOT START");
-  Serial.println(FIRMWARE_VERSION);
-  Serial.println(DEVICE_ID);
 
   pinMode(PIN_HEATER, OUTPUT);
   pinMode(PIN_VENT, OUTPUT);
@@ -1155,9 +1120,7 @@ void setup() {
   pinMode(PIN_MANUAL_BUTTON, INPUT_PULLUP);
 
   applyOutputs();
-
   analogReadResolution(12);
-
   dhtGas.setup(PIN_DHT_GAS, DHTesp::DHT22);
 
   tft.begin();
@@ -1175,14 +1138,12 @@ void setup() {
   pushCurrentToFirebase(latest);
   pushHistoryToFirebase(latest);
   pushHeartbeatToFirebase();
+  pushControlToFirebase();
 
   lastRecommendation = latest.recommendation;
   pushEventToFirebase("info", "System start", "Wokwi Lab-on-Chip platform started");
 }
 
-// ======================================================
-// LOOP
-// ======================================================
 void loop() {
   if (WiFi.status() != WL_CONNECTED && millis() - lastWiFiRetry >= WIFI_RETRY_INTERVAL) {
     lastWiFiRetry = millis();
@@ -1200,6 +1161,7 @@ void loop() {
     applyAutoControl(latest);
     processAlarms(latest);
     printDebug();
+    pushControlToFirebase();
   }
 
   if (millis() - lastPushCurrent >= PUSH_CURRENT_INTERVAL) {
@@ -1232,6 +1194,4 @@ void loop() {
     currentPage = (ScreenPage)((currentPage + 1) % PAGE_COUNT);
     drawCurrentPage();
   }
-
-  delay(20);
 }
